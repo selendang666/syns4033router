@@ -134,16 +134,41 @@ prompt.
 
 ---
 
+## Menu Skills — berfungsi, dan sengaja tanpa backend route
+
+Pernah tercatat sebagai "0 route, klik tidak dilayani". Itu penilaian yang
+salah: halaman memang tidak memanggil `/api/` sama sekali, jadi ketiadaan
+route bukan cacat.
+
+```
+frontend/src/pages/skills/page.jsx          166 baris
+frontend/src/shared/constants/skills.js      92 baris, 10 entri
+panggilan /api/ di halaman                   0
+skills/ di repo                              20 file (10 × SKILL.md)
+```
+
+Katalog dibaca dari konstanta frontend, lalu `skills.js:87` membangun
+`${SKILLS_RAW_BASE}/${id}/SKILL.md` — sebuah raw URL GitHub. Diuji langsung
+terhadap `selendang666/syns4033router@master`:
+
+```
+10/10 raw 200   (SKILL.md 2.5 KB – 7.3 KB, isi nyata)
+10/10 blob 200
+chunk ter-deploy page.7Jo_IOwu.js (7.1 KB) memuat katalog + helper URL
+```
+
+Belum diperiksa: render visual di browser (Chromium tidak terpasang di mesin
+audit), jadi yang terbukti adalah bundle-nya sampai ke production dan URL-nya
+resolve — bukan tampilan layouthya.
+
+Jadi tidak ada route yang perlu ditambah dan tidak ada menu yang perlu
+disembunyikan. Menambah route justru akan membangun lapisan yang tidak
+dibutuhkan — katalognya sudah utuh di client.
+
 ## Known issues
 
-- ⚠️ **Menu Skills ada di sidebar tapi 0 route di backend.** Klik tidak
-      dilayani. Katalog skill lives di frontend sebagai konstanta + URL GitHub.
-      Belum ada keputusan: tambah route, atau sembunyikan menunya.
-- ⚠️ **Model coverage belum lengkap.** Prompt yang masuk lewat jalur di luar
-      `messages` / `input` / `contents` / `system` / `system_instruction` /
-      `request` wrapper belum ditangani. Shape yang dikenal saat ini: OpenAI chat,
-      OpenAI Responses, Anthropic Messages, Gemini REST (snake & camel),
-      Antigravity wrapper, Ollama shim.
+- ⚠️ **Cakupan model belum lengkap.** Prompt yang masuk lewat jalur di luar
+      13 shape yang sudah ditangani.
 - ⚠️ **Efek jailbreak belum pernah dilihat dari respons model asli.** Yang
       terbukti: prompt mendarat di slot system yang benar pada 13 shape, dan
       retry tidak menumpuk pada 5× injeksi di 8 jalur. Yang belum: dampaknya
