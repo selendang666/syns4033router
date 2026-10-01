@@ -24,7 +24,6 @@ export default function SystemPromptPage() {
 
   // Playground editor
   const [playgroundTarget, setPlaygroundTarget] = useState(null); // entry id being edited in playground
-  const [playgroundText, setPlaygroundText] = useState("");
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -128,37 +127,23 @@ export default function SystemPromptPage() {
     setBrowseOpen(false);
   };
 
-  // Playground: open a single entry's prompt for live editing
+  // Playground owns its own draft state, so handing it the source text is all
+  // that is needed — no editor state has to be mirrored up here.
   const openPlayground = (sp) => {
     setPlaygroundTarget(sp);
-    setPlaygroundText(sp.prompt);
     setTab("playground");
   };
 
-  // "Load semua → Playground" — concatenate all prompts into playground editor
+  // "Load semua → Playground" — concatenate every prompt into one draft
   const loadAllToPlayground = () => {
     if (!prompts.length) { showToast("⚠ Belum ada entry"); return; }
-    const text = prompts.map((p) => `<!-- ${p.displayName} → ${p.modelTarget} -->\n${p.prompt}`).join("\n\n");
-    setPlaygroundTarget({ _all: true });
-    setPlaygroundText(text);
+    setPlaygroundTarget({
+      _all: true,
+      prompt: prompts.map((p) => `<!-- ${p.displayName} → ${p.modelTarget} -->\n${p.prompt}`).join("\n\n"),
+    });
     setTab("playground");
   };
 
-  const savePlayground = async () => {
-    if (playgroundTarget?._all) {
-      showToast("⚠ 'Load semua' adalah sandbox — save per-entry di Library");
-      return;
-    }
-    try {
-      const res = await fetch(`/api/system-prompts/${playgroundTarget.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: playgroundText }),
-      });
-      if (res.ok) { showToast("✓ Playground disimpan"); await fetchData(); }
-      else showToast("⚠ Gagal simpan di Playground");
-    } catch (e) { console.error(e); showToast("⚠ Gagal simpan"); }
-  };
 
   const liveCount = prompts.filter((p) => p.isActive && p.injectLive).length;
 
@@ -257,23 +242,16 @@ export default function SystemPromptPage() {
         <>
           {/* "Load semua" used to land here as a concatenated draft. Keep that
               reachable by seeding the playground textarea with it. */}
-          {playgroundTarget && !playgroundTarget._all && (
-            <div className="mb-3 flex items-center justify-between rounded-lg border border-border-subtle bg-surface-2 px-3 py-2">
-              <span className="text-xs text-text-muted">
-                Draft dari entry <b>{playgroundTarget.displayName}</b> — atau edit di bawah lalu Simpan balik.
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPlaygroundTarget(null)}>Batal</Button>
-                <Button size="sm" onClick={savePlayground}>Simpan</Button>
-              </div>
-            </div>
+          {playgroundTarget && (
+            <p className="mb-3 text-xs text-text-muted">
+              Draft dari {playgroundTarget._all ? <b>semua entry</b> : <b>{playgroundTarget.displayName}</b>}
+              {" "}— ubah di bawah, lalu Simpan balik lewat tombol <b>Edit</b> di Library.
+            </p>
           )}
           <PlaygroundTab
             prompts={prompts}
             setToast={showToast}
-            initialDraft={
-              playgroundTarget && !playgroundTarget._all ? playgroundTarget.prompt : undefined
-            }
+            initialDraft={playgroundTarget?.prompt}
           />
         </>
       )}
