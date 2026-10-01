@@ -24,17 +24,21 @@ function textOf(content) {
 
 // Insert as the first system message; if one already exists, append so we
 // keep any operator-authored system context while GODMODE stays authoritative.
+// Every write path must emit the marker, not just the paths that append to
+// something already there. A check that looks for a string the writer never
+// produces is dead code, and retry then piles up one copy per attempt.
 function prependSystem(list, jbPrompt) {
+  const tagged = `${MARKER} ${jbPrompt}`;
   if (!Array.isArray(list) || list.length === 0) {
-    return [{ role: "system", content: jbPrompt }];
+    return [{ role: "system", content: tagged }];
   }
   const first = list[0];
   if (first && first.role === "system") {
     const existing = textOf(first.content);
     if (existing.includes(MARKER)) return list; // already injected
-    list[0] = { ...first, content: `${existing}\n${MARKER} ${jbPrompt}` };
+    list[0] = { ...first, content: existing ? `${existing}\n${tagged}` : tagged };
   } else {
-    list.unshift({ role: "system", content: jbPrompt });
+    list.unshift({ role: "system", content: tagged });
   }
   return list;
 }
@@ -42,21 +46,23 @@ function prependSystem(list, jbPrompt) {
 // Claude: `system` is a top-level string or an array of { type, text } blocks.
 // Same append-not-replace contract as the chat shape.
 function prependClaudeSystem(body, jbPrompt) {
+  const tagged = `${MARKER} ${jbPrompt}`;
   const sys = body.system;
   if (typeof sys === "string") {
     if (sys.includes(MARKER)) return;
-    body.system = sys ? `${sys}\n${MARKER} ${jbPrompt}` : `${MARKER} ${jbPrompt}`;
+    body.system = sys ? `${sys}\n${tagged}` : tagged;
   } else if (Array.isArray(sys)) {
     if (textOf(sys.map((b) => b?.text ?? "")).includes(MARKER)) return;
-    body.system = [...sys, { type: "text", text: jbPrompt }];
+    body.system = [...sys, { type: "text", text: tagged }];
   } else {
-    body.system = [{ type: "text", text: jbPrompt }];
+    body.system = [{ type: "text", text: tagged }];
   }
 }
 
 // Gemini: system_instruction is { parts: [{ text }] }. The repo already writes
 // this shape in open-sse/rtk/caveman.js, so match it.
 function prependGeminiSystem(body, jbPrompt) {
+  const tagged = `${MARKER} ${jbPrompt}`;
   const target = body.request && typeof body.request === "object" ? body.request : body;
   // Prefer whichever spelling the body already uses. When it has neither,
   // default to system_instruction — that is the field name the Gemini REST
@@ -67,9 +73,9 @@ function prependGeminiSystem(body, jbPrompt) {
   const existing = target[key];
   if (existing && Array.isArray(existing.parts)) {
     if (textOf(existing.parts.map((p) => p?.text ?? "")).includes(MARKER)) return;
-    existing.parts.push({ text: jbPrompt });
+    existing.parts.push({ text: tagged });
   } else {
-    target[key] = { parts: [{ text: jbPrompt }] };
+    target[key] = { parts: [{ text: tagged }] };
   }
 }
 

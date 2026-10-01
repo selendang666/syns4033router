@@ -23,12 +23,37 @@ Baris `[live]` = dibuktikan lewat request HTTP nyata ke production.
       seluruh payload Gemini jatuh di semua branch sebelumnya, jadi prompt
       dibuang total untuk provider itu
       — `backend/src/middleware/jailbreak.js:95` · `[test]`
-- ✅ Idempotensi marker — marker dicek sebelum append di 4 titik
-      (`prependSystem`, `prependClaudeSystem` string + array,
-      `prependGeminiSystem`), jadi retry tidak menumpuk prompt
-      — `backend/src/middleware/jailbreak.js:27,44,59` · `[test]`
+- ✅ Idempotensi marker — dicek **dan ditulis** di semua jalur tulis, jadi retry
+      tidak menumpuk prompt
+      — `backend/src/middleware/jailbreak.js:31,49,65` · `[test]`
+      (lihat entri "marker tidak pernah ditulis" di bawah)
 - ✅ Claude `system` string kosong tidak lagi menghasilkan newline di depan
-      — `backend/src/middleware/jailbreak.js:44` · `[test]`
+      — `backend/src/middleware/jailbreak.js:49` · `[test]`
+
+### Idempotensi: marker dicek tapi tidak pernah ditulis
+
+Penanda `[GODMODE]: ` dicari di dalam body sebelum injeksi ulang, tapi jalur
+yang menulis **tidak pernah memproduksinya** — hanya menulis `jbPrompt` polos.
+Ceknya jadi dead code, dan tiap retry menambah satu salinan:
+
+```
+Gemini flat        5× injeksi -> 5 parts   (harusnya 1)
+Antigravity wrapper 5× injeksi -> 5 parts   (penyebab: handler yang sama)
+Gemini + ctx       5× injeksi -> 6 parts
+Claude system array 5× injeksi -> 6 blocks  (bug identik, jalur berbeda)
+Claude system string 5× injeksi -> 1 ✅
+OpenAI messages     5× injeksi -> 1 ✅ (hanya kalau system sudah ada)
+```
+
+Yang lolos cuma jalur yang *menempel* ke teks yang sudah bertanda; jalur yang
+*membuat* entri baru selalu polos. Sekarang setiap jalur tulis memakai satu
+variabel `tagged`
+— `backend/src/middleware/jailbreak.js:31,49,65,79` · `[test]`
+
+Suite test ikut diperbaiki: assertion lama memakai `=== M`, yang gagal setelah
+nilai jadi `[GODMODE]: M` — persis yangPRD perkirakan. Sekarang 19 case:
+13 shape + 8 idempotensi (satu per jalur tulis). Sebelumnya idempotensi hanya
+diuji untuk OpenAI.
 
 ### Route mati total (500 untuk semua request)
 
@@ -119,9 +144,10 @@ prompt.
       `request` wrapper belum ditangani. Shape yang dikenal saat ini: OpenAI chat,
       OpenAI Responses, Anthropic Messages, Gemini REST (snake & camel),
       Antigravity wrapper, Ollama shim.
-- ⚠️ **Idempotensi belum diuji ke model asli.** Yang terbukti adalah tidak
-      menumpuk di body request pada 3× injeksi beruntun — efeknya pada
-      konteks model masih perlu request nyata ke provider.
+- ⚠️ **Efek jailbreak belum pernah dilihat dari respons model asli.** Yang
+      terbukti: prompt mendarat di slot system yang benar pada 13 shape, dan
+      retry tidak menumpuk pada 5× injeksi di 8 jalur. Yang belum: dampaknya
+      terhadap jawaban model — butuh provider credential sungguhan.
 - ⚠️ **`hermes verify` belum punya CI.** GitHub Actions masih nonaktif
       (0 workflow, `enabled: false`), jadi gate hanya jalan lokal.
 - ⚠️ **Produksi belum punya provider credential**, jadi request end-to-end ke
