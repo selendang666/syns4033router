@@ -1,0 +1,23 @@
+{
+  "name": "syns4033router",
+  "private": true,
+  "version": "3.0.0",
+  "description": "SYNS4033Router by codestorm — self-hosted AI gateway monorepo",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "backend/open-sse"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=syns4033router-backend\" \"npm run dev --workspace=syns4033router-frontend\"",
+    "build": "npm run build --workspace=syns4033router-backend && npm run build --workspace=syns4033router-frontend",
+    "backend": "npm run dev --workspace=syns4033router-backend",
+    "frontend": "npm run dev --workspace=syns4033router-frontend",
+    "start": "npm run start --workspace=syns4033router-backend",
+    "heroku-postbuild": "npm run build",
+    "typecheck": "npm run typecheck --workspace=syns4033router-backend && npm run typecheck --workspace=syns4033router-frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "SYNS4033Router gateway",
+  "kind": "node",
+  "bootstrap": [],
+  "build": [
+    "npm run build",
+    "npm run typecheck"
+  ],
+  "test": [
+    "node scripts/guard-secure-defaults.mjs",
+    "node scripts/guard-auth-path.mjs",
+    "node --check backend/open-sse/handlers/chatCore.js",
+    "node --check backend/open-sse/handlers/chatCore/streamingHandler.js",
+    "node --check backend/open-sse/transformer/watermark.js",
+    "node --check backend/src/lib/dataDir.js"
+  ],
+  "start": "npm run start --workspace=syns4033router-backend",
+  "port": 3999,
+  "readinessPath": "/api/health",
+  "evidence": [
+    "Backend must start via the npm workspace so the @/ alias loader resolves; running dist/server.js directly fails with Cannot find package '@/lib'",
+    "open-sse/ is excluded from tsconfig, so it is only syntax-checked here and exercised by the E2E injection harness",
+    "Port and DATA_DIR are injected at verify time; readiness is /api/health returning {\"status\":\"ok\"}"
+  ]
+}
