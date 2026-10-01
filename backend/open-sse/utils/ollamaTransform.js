@@ -78,8 +78,29 @@ export function transformToOllama(response, model) {
   if (!response.body) {
     return new Response("", { status: response.status, headers: { "Content-Type": "application/x-ndjson" } });
   }
+
+  // An error response is JSON, not SSE — the transform above ignores anything
+  // that does not start with "data:", so passing one through produced a 200
+  // with an empty stream. That masked every rejection (a missing API key, an
+  // unknown provider) as a successful empty answer. Keep the upstream status
+  // and surface the message in the Ollama error field instead.
+  if (response.status >= 400) {
+    return new Response(
+      JSON.stringify({
+        model,
+        error: `upstream returned ${response.status}`,
+        done: true,
+      }) + "\n",
+      {
+        status: response.status,
+        headers: { "Content-Type": "application/x-ndjson", "Access-Control-Allow-Origin": "*" },
+      },
+    );
+  }
+
   return new Response(response.body.pipeThrough(transform), {
-    headers: { "Content-Type": "application/x-ndjson", "Access-Control-Allow-Origin": "*" }
+    status: response.status,
+    headers: { "Content-Type": "application/x-ndjson", "Access-Control-Allow-Origin": "*" },
   });
 }
 
