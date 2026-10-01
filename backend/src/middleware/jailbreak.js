@@ -45,7 +45,7 @@ function prependClaudeSystem(body, jbPrompt) {
   const sys = body.system;
   if (typeof sys === "string") {
     if (sys.includes(MARKER)) return;
-    body.system = `${sys}\n${MARKER} ${jbPrompt}`;
+    body.system = sys ? `${sys}\n${MARKER} ${jbPrompt}` : `${MARKER} ${jbPrompt}`;
   } else if (Array.isArray(sys)) {
     if (textOf(sys.map((b) => b?.text ?? "")).includes(MARKER)) return;
     body.system = [...sys, { type: "text", text: jbPrompt }];
@@ -87,6 +87,21 @@ export function injectJailbreak(body, jbPrompt) {
   if (body.system_instruction !== undefined || body.systemInstruction !== undefined) {
     prependGeminiSystem(body, jbPrompt);
     return body;
+  }
+  // Antigravity wraps the whole Gemini payload in body.request (see
+  // open-sse/translator/request/antigravity-to-openai.js). Without this branch
+  // nothing above matches — neither the instruction nor `contents` is on the
+  // top level — so the prompt was dropped entirely for that provider.
+  const wrapped = body.request;
+  if (wrapped && typeof wrapped === "object") {
+    if (
+      Array.isArray(wrapped.contents) ||
+      wrapped.system_instruction !== undefined ||
+      wrapped.systemInstruction !== undefined
+    ) {
+      prependGeminiSystem(body, jbPrompt);
+      return body;
+    }
   }
   // OpenAI chat format
   if (Array.isArray(body.messages)) {

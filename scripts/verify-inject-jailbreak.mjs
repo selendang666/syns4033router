@@ -67,5 +67,24 @@ const twice = injectJailbreak(once, M);
 const count = (twice.messages[0].content.match(/GODMODE/g) || []).length;
 t("idempoten: retry tidak menumpuk", twice, () => count === 1 && twice.messages.length === 2);
 
-console.log(`\n=== ${9 - fail}/9 pass ===`);
+
+// Antigravity wraps the whole Gemini payload in body.request
+// (open-sse/translator/request/antigravity-to-openai.js). This shape fell
+// through every branch, so the prompt was silently dropped for that provider.
+t("Antigravity wrapper, systemInstruction camel",
+  { project: "p", model: "gemini-pro", request: { systemInstruction: { parts: [{ text: "ctx" }] }, contents: [{ role: "user", parts: [{ text: "hi" }] }] } },
+  (b) => b.request.systemInstruction.parts.some((x) => x.text?.includes(M)));
+t("Antigravity wrapper, system_instruction snake",
+  { model: "gemini-pro", request: { system_instruction: { parts: [{ text: "ctx" }] }, contents: [] } },
+  (b) => b.request.system_instruction.parts.some((x) => x.text === M));
+t("Antigravity wrapper, no instruction block",
+  { model: "gemini-pro", request: { contents: [{ role: "user", parts: [{ text: "hi" }] }] } },
+  (b) => b.request.system_instruction?.parts?.[0]?.text === M);
+
+// An empty system string should not leave a bare leading newline.
+t("Claude empty system has no leading newline",
+  { system: "", messages: [{ role: "user", content: "hi" }] },
+  (b) => b.system === `[GODMODE]: ${M}`);
+
+console.log(`\n=== ${13 - fail}/13 pass ===`);
 process.exit(fail ? 1 : 0);
