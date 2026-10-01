@@ -5,7 +5,7 @@
  * instance, rather than just returning 200 on a listing route. Boots nothing
  * itself: point GW at a running server and pass a dashboard session cookie.
  *
- *   cd /root/9router-jb && npm run start --workspace=syns4033router-backend &
+ *   cd <repo> && npm run start --workspace=syns4033router-backend &
  *   curl -c /tmp/ck -X POST http://localhost:3974/api/auth/login \
  *     -H 'Content-Type: application/json' -d '{"password":"..."}'
  *   COOKIE=$(grep syns4033_session /tmp/ck | awk '{print "syns4033_session="$7}') \
