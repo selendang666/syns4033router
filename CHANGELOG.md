@@ -159,7 +159,21 @@ chunk ter-deploy page.7Jo_IOwu.js (7.1 KB) memuat katalog + helper URL
 
 Belum diperiksa: render visual di browser (Chromium tidak terpasang di mesin
 audit), jadi yang terbukti adalah bundle-nya sampai ke production dan URL-nya
-resolve — bukan tampilan layouthya.
+resolve — bukan tampilan tata letaknya.
+
+Katalog ini bukan syarat jailbreak, tapi berguna untuk target router: isi
+`SKILL.md` bisa dipakai sebagai isi prompt di panel System Prompt, yang
+memang sudah menerima teks bebas per-model atau lewat wildcard `*`. Keduanya
+baca sumber yang berbeda — katalog dari GitHub, prompt dari database — tapi
+mengalir ke slot system yang sama:
+
+```
+POST /api/system-prompts  body { displayName?, modelTarget, prompt, isActive?, injectLive? }
+modelTarget "*"          entri global untuk semua provider/model
+                          — backend/src/routes/system-prompts/route.ts:28-32
+                          — backend/src/lib/db/repos/systemPromptsRepo.js:36
+chatCore.js:73            body = injectJailbreak(body, jbPrompt)
+```
 
 Jadi tidak ada route yang perlu ditambah dan tidak ada menu yang perlu
 disembunyikan. Menambah route justru akan membangun lapisan yang tidak
