@@ -28,10 +28,11 @@ export async function POST_handler(req, res) {
   await ensureInitialized();
   const body = req.body;
   body._compact = true;
-  const newRequest = new Request(req.url, {
+  const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  const newRequest = new Request(fullUrl, {
     method: "POST",
-    headers: request.headers,
-    body: JSON.stringify(body)
+    headers: new Headers(req.headers),
+    body: JSON.stringify(body),
   });
   return await handleChat(newRequest);
 }

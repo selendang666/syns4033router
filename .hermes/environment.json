@@ -9,6 +9,7 @@
   "test": [
     "node scripts/guard-secure-defaults.mjs",
     "node scripts/guard-auth-path.mjs",
+    "node scripts/verify-inject-jailbreak.mjs",
     "node --check backend/open-sse/handlers/chatCore.js",
     "node --check backend/open-sse/handlers/chatCore/streamingHandler.js",
     "node --check backend/open-sse/transformer/watermark.js",

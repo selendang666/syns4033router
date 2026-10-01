@@ -81,9 +81,10 @@ export async function POST_handler(req, res, { params }) {
     const convertedBody = convertGeminiToInternal(body, model, stream);
 
     // Create new request with converted body
-    const newRequest = new Request(req.url, {
+    const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  const newRequest = new Request(fullUrl, {
       method: "POST",
-      headers: request.headers,
+      headers: new Headers(req.headers),
       body: JSON.stringify(convertedBody),
     });
 

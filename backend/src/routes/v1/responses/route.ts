@@ -26,5 +26,16 @@ export async function OPTIONS() {
  */
 export async function POST_handler(req, res) {
   await ensureInitialized();
-  return await handleChat(request);
+
+  // `request` is not in scope — the Responses endpoint 500'd on every call.
+  // Shape the Express request into the web Request handleChat expects; the
+  // openai-responses format is auto-detected downstream.
+  const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  const webReq = new Request(fullUrl, {
+    method: req.method,
+    headers: new Headers(req.headers),
+    body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
+  });
+
+  return await handleChat(webReq);
 }

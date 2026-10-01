@@ -41,7 +41,7 @@ export async function POST_handler(req, res) {
     }
 
     const discovery = await fetchOidcDiscovery(issuerUrl);
-    const redirectUri = `${getPublicOrigin(request)}/api/auth/oidc/callback`;
+    const redirectUri = `${getPublicOrigin(req)}/api/auth/oidc/callback`;
     const secretProbe = await probeOidcClientSecret({
       tokenEndpoint: discovery.token_endpoint,
       clientId,
