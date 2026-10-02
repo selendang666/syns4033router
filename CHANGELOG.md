@@ -159,6 +159,41 @@ set null → /api/settings tanpa session = 401  (dulu 200)
 Boolean asli tetap dihormati: operator tetap bisa mematikan auth lewat UI, itu
 fiturnya, bukan bug.
 
+### Entry system prompt ber-alias tidak pernah dipakai
+
+Entry di panel di-*lookup* pakai kunci yang dibangun dari `provider` dan `model`
+**setelah alias di-resolve**:
+
+```js
+getModelInfoCore("oc/space-bunny-free")
+  → alias map tidak resolve
+  → fallback inferProviderFromModelName("space-bunny-free") → "openai"  (default)
+jbKeys = ["openai/space-bunny-free", "space-bunny-free"]
+```
+
+Panel menyimpan `oc/space-bunny-free`. Tidak ada satu pun kunci yang cocok,
+jadi per-model entry **tidak pernah terinjeksi** dan wildcard global diam-diam
+menang — persis kebalikan dari yang didokumentasikan. Terbukti di production:
+
+```
+global=TTGLOB…  exact=TTEXACT…   →  jawaban "TTGLOB90bb6"   (wildcard menang)
+entry "oc/space-bunny-free"       →  tidak pernah dipakai
+entry "opencode/space-bunny-free" →  dipakai (bentuk ter-resolve)
+```
+
+Sekarang `chat.js` meneruskan `modelStr` apa adanya sebagai `requestedModel`,
+dan `chatCore` mencocokkannya **lebih dulu** sebelum bentuk ter-resolve
+— `backend/src/sse/handlers/chat.js:203`,
+  `backend/open-sse/handlers/chatCore.js` · `[test]`
+
+```
+global + exact ada  →  "VVEXACTc11e5"   exact menang ✓
+exact dihapus       →  "VVGLOB94573"    wildcard jadi fallback ✓
+```
+
+Alias `opencode → oc`, `claude → cc`, `codex → cx` ikut dipetakan sebagai kunci
+kedua, karena provider bisa gagal di-resolve ke default.
+
 ### Ollama shim
 
 - ✅ `POST /v1/api/chat` membalas `200` dengan stream kosong untuk **setiap**

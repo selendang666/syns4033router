@@ -22,6 +22,14 @@ import { injectJailbreak } from "../../src/middleware/jailbreak.js";
 import { compressMessages, formatRtkLog } from "../rtk/index.js";
 import { sanitizeCodebuddySystemPrompt } from "../utils/codebuddySanitizer.js";
 import { shouldRefreshCredentials } from "../services/oauthCredentialManager.js";
+import {
+  AI_PROVIDERS,
+  FREE_PROVIDERS,
+  FREE_TIER_PROVIDERS,
+  OAUTH_PROVIDERS,
+  APIKEY_PROVIDERS,
+  WEB_COOKIE_PROVIDERS,
+} from "../../src/shared/constants/providers.js";
 
 /**
  * Core chat handler - shared between SSE and Worker
@@ -30,7 +38,36 @@ import { shouldRefreshCredentials } from "../services/oauthCredentialManager.js"
  * @param {object} options.credentials - Provider credentials
  * @param {string} options.sourceFormatOverride - Override detected source format (e.g. "openai-responses")
  */
-export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, cavemanEnabled, cavemanLevel, sourceFormatOverride, providerThinking }) {
+// Map a resolved provider id back to its public alias, when the two differ.
+// "opencode" is reached as "oc/" in the panel and in any request the caller
+// makes, so the two spellings have to both be offered to the prompt lookup.
+let _aliasIndex = null;
+function aliasForProviderId(providerId) {
+  if (!providerId) return "";
+  if (!_aliasIndex) {
+    // The alias lives in whichever map declares the provider — AI_PROVIDERS has
+    // three entries and no aliases at all, so looking only there finds nothing
+    // for "opencode" and the per-model prompt silently loses to the wildcard.
+    _aliasIndex = new Map();
+    for (const map of [
+      AI_PROVIDERS,
+      FREE_PROVIDERS,
+      FREE_TIER_PROVIDERS,
+      OAUTH_PROVIDERS,
+      APIKEY_PROVIDERS,
+      WEB_COOKIE_PROVIDERS,
+    ]) {
+      for (const entry of Object.values(map || {})) {
+        if (entry?.id && entry.alias && entry.alias !== entry.id && !_aliasIndex.has(entry.id)) {
+          _aliasIndex.set(entry.id, entry.alias);
+        }
+      }
+    }
+  }
+  return _aliasIndex.get(providerId) || "";
+}
+
+export async function handleChatCore({ body, modelInfo, requestedModel, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, cavemanEnabled, cavemanLevel, sourceFormatOverride, providerThinking }) {
   const { provider, model } = modelInfo;
   const requestStartTime = Date.now();
 
@@ -45,10 +82,20 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   //
   // The panel stores `modelTarget` as the public alias the caller typed (e.g.
   // "cc/claude-opus-4-8"), but here we hold the *resolved* provider and model
-  // separately, so the qualified name is tried first and the bare id second.
-  // Without that the lookup would never match and the operator's prompt would
-  // silently never be injected.
-  const jbKeys = [`${provider}/${model}`, model].filter(Boolean);
+  // separately. Where the alias differs from the provider id those two forms
+  // are different strings: "oc/space-bunny-free" in the panel, "opencode" as the
+  // provider here. Trying only the resolved form meant a per-model entry keyed
+  // by an alias never matched and the global wildcard silently won instead.
+  // So try both spellings, resolved first, then alias, then the bare model.
+  const providerAlias = aliasForProviderId(provider);
+
+  const jbKeys = [
+    // What the caller typed — the panel's key, verbatim.
+    requestedModel || "",
+    provider && model ? `${provider}/${model}` : "",
+    providerAlias && model ? `${providerAlias}/${model}` : "",
+    model || "",
+  ].filter(Boolean);
   const jbParts = [];
   try {
     const { getSystemPromptForModel, GLOBAL_TARGET } = await import("../../src/lib/db/index.js");

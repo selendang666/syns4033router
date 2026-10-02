@@ -201,6 +201,11 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
     const result = await handleChatCore({
       body: { ...body, model: `${provider}/${model}` },
       modelInfo: { provider, model },
+      // The string the caller actually typed. The panel keys system prompts on
+      // exactly this, and after alias resolution it is not recoverable from
+      // provider + model — "oc/space-bunny-free" resolves to provider "openai"
+      // via the name-inference fallback, so both spellings miss the entry.
+      requestedModel: modelStr,
       credentials: refreshedCredentials,
       log,
       clientRawRequest,
