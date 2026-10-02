@@ -6,7 +6,10 @@ const APP_NAME = "syns4033router";
 
 // Pre-rebrand directory names — if the new dir has no DB yet but a legacy one
 // does, keep reading from legacy so an existing install isn't orphaned.
-const LEGACY_DIRS = ["syns4033router", "syns4033router"];
+// These must stay the OLD names: a find-and-replace during the rebrand rewrote
+// both entries to the new name, which made the fallback look for the directory
+// it was already using and never find a real legacy install.
+const LEGACY_DIRS = ["9router", "9Router", "9router-v3"];
 
 function defaultDir() {
   if (process.platform === "win32") {

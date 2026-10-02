@@ -10,7 +10,7 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
 
-const GW = process.argv[2] || "https://syns4033router-production.up.railway.app";
+const GW = process.argv[2] || process.env.GW || "http://localhost:3001";
 const PW = process.env.PW || "";
 const OUT = "/tmp/menu-shots";
 fs.mkdirSync(OUT, { recursive: true });
