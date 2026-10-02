@@ -28,9 +28,7 @@ export async function POST_handler(req, res) {
     return res.json({ success: true });
   } catch (error) {
     console.log("Error importing database:", error);
-    return res.json(
-      { error: error?.message || "Failed to import database" },
-      { status: 400 }
-    );
+    return res.status(400).json(
+      { error: error?.message || "Failed to import database" });
   }
 }

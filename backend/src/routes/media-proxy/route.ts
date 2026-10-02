@@ -93,10 +93,8 @@ export async function GET_handler(req, res) {
     });
   } catch (err) {
     console.error("[media-proxy] Fetch error:", err.message);
-    return res.json(
-      { error: "Upstream fetch failed" },
-      { status: 502 }
-    );
+    return res.status(502).json(
+      { error: "Upstream fetch failed" });
   }
 }
 

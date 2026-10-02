@@ -119,10 +119,8 @@ export async function POST_handler(req, res) {
     }
 
     if (!checkPrivilege(pwd)) {
-      return res.json(
-        { error: isWin ? "Administrator required — restart SYNS4033Router as Administrator" : "Root or sudo password required to start MITM" },
-        { status: 403 }
-      );
+      return res.status(403).json(
+        { error: isWin ? "Administrator required — restart SYNS4033Router as Administrator" : "Root or sudo password required to start MITM" });
     }
 
     if (mitmRouterBaseUrl !== undefined && mitmRouterBaseUrl !== null) {
@@ -130,10 +128,7 @@ export async function POST_handler(req, res) {
         const normalized = normalizeMitmRouterBaseUrlInput(mitmRouterBaseUrl);
         await updateSettings({ mitmRouterBaseUrl: normalized });
       } catch (e) {
-        return res.json(
-          { error: e.message || "Invalid MITM router URL" },
-          { status: 400 },
-        );
+        return res.status(400).json({ error: e.message || "Invalid MITM router URL" });
       }
     }
 
@@ -144,10 +139,8 @@ export async function POST_handler(req, res) {
   } catch (error) {
     console.log("Error starting MITM server:", error.message);
     if (error.code === "PORT_443_BUSY") {
-      return res.json(
-        { error: error.message, code: "PORT_443_BUSY", portOwner: error.portOwner },
-        { status: 409 }
-      );
+      return res.status(409).json(
+        { error: error.message, code: "PORT_443_BUSY", portOwner: error.portOwner });
     }
     return res.status(500).json({ error: error.message || "Failed to start MITM server" });
   }
@@ -191,10 +184,8 @@ export async function PATCH_handler(req, res) {
       return res.status(400).json({ error: "Missing sudoPassword" });
     }
     if (!checkPrivilege(pwd)) {
-      return res.json(
-        { error: isWin ? "Administrator required — restart SYNS4033Router as Administrator" : "Root or sudo password required to modify DNS" },
-        { status: 403 }
-      );
+      return res.status(403).json(
+        { error: isWin ? "Administrator required — restart SYNS4033Router as Administrator" : "Root or sudo password required to modify DNS" });
     }
 
     if (action === "enable") {

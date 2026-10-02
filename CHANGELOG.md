@@ -344,6 +344,40 @@ sama dengan boolean tersimpan sebagai tipe yang salah
 
 ---
 
+### 43 penolakan yang diam-diam terkirim sebagai 200
+
+Audit `/dashboard/mitm` menemukan pola ini di alias MITM:
+
+```js
+return res.json(
+  { error: `DNS must be enabled for ${tool} ...` },
+  { status: 403 }        // res.json() hanya menerima satu argumen
+);
+```
+
+`res.json()` hanya menerima satu argumen. Argumen kedua dibuang tanpa
+peringatan, jadi 403 yang dimaksud tidak pernah terjadi dan yang terkirim
+adalah `200` dengan body error. Akibatnya `res.ok` bernilai true, apa pun
+yang memanggil tetap berarti request-nya berhasil, dan monitoring
+menghitungnya sebagai request sukses.
+
+```
+PUT /api/cli-tools/antigravity-mitm/alias
+  sebelum → 200  {"error":"DNS must be enabled for cursor ..."}
+  sesudah → 403
+```
+
+43 pemanggilan di 24 file, termasuk yang bukan di MITM:
+`usage/request-details` (`pageSize=99999` tidak pernah ditolak),
+`version/update`, `locale`, `models/availability`, `pricing`, `proxy-pools/*`,
+`oauth/*`, `cli-tools/*`, `settings/database`.
+
+Sebagian variannya memakai status dinamis, misalnya
+`{ status: getResponse.status }` di `oauth/iflow/cookie` dan
+`proxy-pools/deno-deploy` — semuanya ikut jadi 200.
+
+— `scripts/guard-json-status.mjs` (baru)aits— `backend/src/routes/**` (24 file)
+
 ### Quota: "No Providers Connected" padahal ada 3 koneksi
 
 Halaman Quota menampilkan pesan kosong itu bila

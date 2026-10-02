@@ -100,10 +100,8 @@ export async function POST_handler(req, res) {
 
     if (!deployRes.ok) {
       const err = await deployRes.json().catch(() => ({}));
-      return res.json(
-        { error: err.error?.message || "Failed to create Vercel deployment" },
-        { status: deployRes.status }
-      );
+      return res.status(deployRes.status).json(
+        { error: err.error?.message || "Failed to create Vercel deployment" });
     }
 
     const deployment = await deployRes.json();
