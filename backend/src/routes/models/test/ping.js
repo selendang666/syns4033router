@@ -1,6 +1,7 @@
 import { getApiKeys } from "../../../lib/localDb.js";
 import { UPDATER_CONFIG } from "../../../shared/constants/config.js";
 import { getConsistentMachineId } from "../../../shared/utils/machineId.js";
+import { handleChat } from "../../../sse/handlers/chat.js";
 
 const CLI_TOKEN_SALT = "9r-cli-auth";
 
@@ -130,21 +131,40 @@ export async function pingModelByKind(model, kind, baseUrl = `http://127.0.0.1:$
     return { ok: true, latencyMs, error: null, status: res.status };
   }
 
-  const res = await fetch(`${baseUrl}/api/v1/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model,
-      max_tokens: 1,
-      stream: false,
-      messages: [{ role: "user", content: "hi" }],
-    }),
-    signal: AbortSignal.timeout(15000),
-  });
+  // Go through handleChat in-process rather than self-fetching /api/v1. A
+  // loopback fetch is still a public-path request, so it needed a real API key:
+  // with an empty apiKeys table it sent no Authorization header at all and the
+  // requireApiKey gate answered "HTTP 401: Missing API key" for every model —
+  // the normal state of a fresh install, before anyone creates a key.
+  // authAlreadyChecked marks this as an internal call from behind the dashboard
+  // session guard, the same path the System Prompt playground uses.
+  let res;
+  let parsed = null;
+  try {
+    res = await handleChat(
+      new Request(`${baseUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1,
+          stream: false,
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      }),
+      null,
+      { authAlreadyChecked: true },
+    );
+  } catch (err) {
+    return { ok: false, latencyMs: Date.now() - start, error: `Ping threw: ${String(err?.message || err).slice(0, 240)}` };
+  }
   const latencyMs = Date.now() - start;
 
+  if (!(res instanceof Response)) {
+    return { ok: false, latencyMs, error: "No response from router", status: 500 };
+  }
+
   const rawText = await res.text().catch(() => "");
-  let parsed = null;
   try { parsed = rawText ? JSON.parse(rawText) : null; } catch {}
 
   if (!res.ok) {
