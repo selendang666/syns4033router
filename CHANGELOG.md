@@ -124,15 +124,45 @@ diuji untuk OpenAI.
 
 ---
 
-## Out of scope — dicatat terpisah
 
-Perubahan di `auth/oidc/*`, `routes/v1/responses/*`, `v1beta/*` dan
-`ollamaTransform.js` **tidak terkait jailbreak**. Semuanya adalah hasil sweep
-route yang salah ditemukan — `request` yang tidak terdefinisi dan respons error yang
-tertelan transform. Dicatat di sini supaya tidak tercampur dengan entri system
-prompt.
+### Playground global: model bukan lagi syarat
 
----
+Entry global (`modelTarget: "*"`) terikat ke model apa pun — itu
+fungsinya. Tapi form mewajibkan `form.model` terisi, jadi memilih entry global
+lalu menekan Run berakhir dengan toast "Pilih model dulu" dan **nol request
+terkirim**. Toast-nya hijau dan hilang dalam 2,5 detik, jadi dari sisi user
+terbaca sebagai tombol mati.
+
+```
+  useEffect memuat entry pertama (non-* atau [0]) → prompt + model terisi
+  pilih entry global → kolom Model boleh kosong
+  Run → model = form.model.trim() || defaultModel()
+```
+
+Kolom Model tetap bebas — ganti untuk mengarahkan prompt global ke model lain.
+Label di bawah tombol menyebutkan model yang benar-benar dipakai, supaya prompt
+global yang dites di satu model nggak terbaca sebagai "sudah dites di semua".
+
+Backend tidak diubah: `try/route.ts:82` tetap `if (!model) return 400`, dan
+frontend selalu mengirim model, jadi guard itu tidak terjangkau dari UI.
+
+### Regresi white screen — TDZ di effect dependency
+
+`defaultModel` masuk ke dependency array `useEffect`, yang dievaluasi di
+tempat pemanggilan `useEffect`. Karena `const defaultModel = useCallback(...)`
+dideklarasikan di bawahnya, pembacaan di situ masuk temporal dead zone:
+component crash saat mount, halaman kosong total.
+
+```
+ReferenceError: Cannot access 'm' before initialization
+```
+
+`m` adalah nama yang dipakai minifier Vite, makanya pesan itu menunjuk variabel
+yang tidak ada di source. `npm run build` dan `npm run typecheck` hijau selama
+selama itu — hanya memuat halaman di browser yang.myatakannya.
+
+Diperbaiki dengan menaikkan helper ke atas effect — `PlaygroundTab.jsx`
+— `[test]`
 
 ## Menu Skills — berfungsi, dan sengaja tanpa backend route
 
@@ -179,6 +209,7 @@ Jadi tidak ada route yang perlu ditambah dan tidak ada menu yang perlu
 disembunyikan. Menambah route justru akan membangun lapisan yang tidak
 dibutuhkan — katalognya sudah utuh di client.
 
+
 ## Known issues
 
 - ⚠️ **Cakupan model belum lengkap.** Prompt yang masuk lewat jalur di luar
@@ -188,10 +219,26 @@ dibutuhkan — katalognya sudah utuh di client.
       retry tidak menumpuk pada 5× injeksi di 8 jalur. Yang belum: dampaknya
       terhadap jawaban model — butuh provider credential sungguhan.
 - ⚠️ **`hermes verify` belum punya CI.** GitHub Actions masih nonaktif
-      (0 workflow, `enabled: false`), jadi gate hanya jalan lokal.
+      (0 workflow, `enabled: false`), jadi gate hanya jalan lokal — siapa pun
+      yang fork harus menjalankan `hermes verify` sendiri.
+- ⚠️ **Riwayat commit di GitHub lebih kasar dari yang dikerjakan.** Sync
+      berjalan lewat clone bersih karena satu objek git lokal korup, dan
+      `git add -A` per-commit membuat beberapa commit memuat lebih dari yang
+      tertulis di commit message-nya. Isi file tidak terpengaruh dan sudah
+      terverifikasi; yang kurang presisi hanya `git log`.
 - ⚠️ **Produksi belum punya provider credential**, jadi request end-to-end ke
       model asli belum pernah terjadi dari production. Yang terbukti di
       production: routing, auth, dan bentuk shape sampai ke lapisan sebelum fetch
       upstream.
 - ⚠️ **`[DONE]` dobel pada SSE** — terjadi dengan maupun tanpa watermark,
       jadi ini bug framing gateway yang terpisah, bukan efek watermark.
+
+## Out of scope — dicatat terpisah
+
+Perubahan di `auth/oidc/*`, `routes/v1/responses/*`, `v1beta/*` dan
+`ollamaTransform.js` **tidak terkait jailbreak**. Semuanya adalah hasil sweep
+route yang salah ditemukan — `request` yang tidak terdefinisi dan respons error yang
+tertelan transform. Dicatat di sini supaya tidak tercampur dengan entri system
+prompt.
+
+---
