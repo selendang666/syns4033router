@@ -173,6 +173,27 @@ fiturnya, bukan bug.
       200 empty -> 404 {"error":"upstream returned 404"}
       ```
 
+### Validasi API key OpenRouter selalu bilang "valid"
+
+`POST /api/providers/validate` untuk `openrouter` memprobe
+`https://openrouter.ai/api/v1/models`. Endpoint itu **katalog publik** — ia
+balas 200 bahkan tanpa header Authorization sama sekali:
+
+```
+GET /api/v1/models tanpa header : 200
+GET /api/v1/models key sampah   : 200
+GET /api/v1/models key ngawur   : 200
+GET /api/v1/key    key sampah   : 401   ← yang beneran butuh auth
+```
+
+Jadi operator menambah key, dialog bilang "valid ✓", lalu setiap request
+benar-benar 401. Empat provider lain yang dicek lewat `/models` (openai,
+vercel-ai-gateway, gemini, deepgram) 모두 benar — semuanya 401 untuk key
+sampah.
+
+Diganti ke `/api/v1/key`, endpoint yang diautentikasi
+— `backend/src/routes/providers/validate/route.ts:354` · `[test]`
+
 ### SSRF
 
 - ✅ Body `#hex` malformed sebelumnya membuat `ssrfGuard` melempar, dan blok
@@ -302,6 +323,12 @@ dibutuhkan — katalognya sudah utuh di client.
       `git add -A` per-commit membuat beberapa commit memuat lebih dari yang
       tertulis di commit message-nya. Isi file tidak terpengaruh dan sudah
       terverifikasi; yang kurang presisi hanya `git log`.
+- ⚠️ **Halaman Weavy Token Pool adalah orphan.** `providers/weavy/pool/page.jsx`
+      masih ada dan masih punya route di `App.tsx`, tapi satu-satunya sumber
+      datanya `/api/providers/weavy/pool` tidak ada di backend — 404. Provider-nya
+      sendiri sudah dihapus di v0.6.0 (`// weavy removed — automation scripts
+      deleted in v0.6.0` di `providers.js`). Tidak ada di sidebar, jadi hanya
+      tercapai lewat URL. Halaman mati, bukan fitur yang belum selesai.
 - ⚠️ **Produksi belum punya provider credential**, jadi request end-to-end ke
       model asli belum pernah terjadi dari production. Yang terbukti di
       production: routing, auth, dan bentuk shape sampai ke lapisan sebelum fetch

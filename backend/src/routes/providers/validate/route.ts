@@ -354,7 +354,12 @@ export async function POST_handler(req, res) {
           break;
 
         case "openrouter":
-          const openrouterRes = await fetch("https://openrouter.ai/api/v1/models", {
+          // /api/v1/models is a public catalogue — it answers 200 with no
+          // Authorization header at all, so probing it told the operator their
+          // key was valid while every real request would 401. /api/v1/key is
+          // the authenticated endpoint: 200 with the key's own metadata,
+          // 401 for anything else.
+          const openrouterRes = await fetch("https://openrouter.ai/api/v1/key", {
             headers: { "Authorization": `Bearer ${apiKey}` },
           });
           isValid = openrouterRes.ok;
