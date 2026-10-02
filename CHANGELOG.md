@@ -221,7 +221,6 @@ Diganti ke `/api/v1/key`, endpoint yang diautentikasi
 
 ---
 
-
 ### Playground global: model bukan lagi syarat
 
 Entry global (`modelTarget: "*"`) terikat ke model apa pun — itu
@@ -306,7 +305,6 @@ Jadi tidak ada route yang perlu ditambah dan tidak ada menu yang perlu
 disembunyikan. Menambah route justru akan membangun lapisan yang tidak
 dibutuhkan — katalognya sudah utuh di client.
 
-
 ## Known issues
 
 - ⚠️ **Cakupan model belum lengkap.** Prompt yang masuk lewat jalur di luar
@@ -323,12 +321,6 @@ dibutuhkan — katalognya sudah utuh di client.
       `git add -A` per-commit membuat beberapa commit memuat lebih dari yang
       tertulis di commit message-nya. Isi file tidak terpengaruh dan sudah
       terverifikasi; yang kurang presisi hanya `git log`.
-- ⚠️ **Halaman Weavy Token Pool adalah orphan.** `providers/weavy/pool/page.jsx`
-      masih ada dan masih punya route di `App.tsx`, tapi satu-satunya sumber
-      datanya `/api/providers/weavy/pool` tidak ada di backend — 404. Provider-nya
-      sendiri sudah dihapus di v0.6.0 (`// weavy removed — automation scripts
-      deleted in v0.6.0` di `providers.js`). Tidak ada di sidebar, jadi hanya
-      tercapai lewat URL. Halaman mati, bukan fitur yang belum selesai.
 - ⚠️ **Produksi belum punya provider credential**, jadi request end-to-end ke
       model asli belum pernah terjadi dari production. Yang terbukti di
       production: routing, auth, dan bentuk shape sampai ke lapisan sebelum fetch
