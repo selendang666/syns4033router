@@ -8,9 +8,16 @@
  * Callers must read `settings` before calling, so `requireApiKey` is the value
  * actually in effect rather than a guess.
  */
-export function logApiKeyAuth(log, apiKey, requireApiKey) {
+export function logApiKeyAuth(log, apiKey, requireApiKey, authAlreadyChecked = false) {
   if (apiKey) {
     log.debug("AUTH", `API Key: ${log.maskKey(apiKey)}`);
+    return;
+  }
+  // An internal caller already behind the dashboard session guard skips the key
+  // check below. Saying it "will be rejected" sent me hunting a 401 that the
+  // request was never going to hit.
+  if (authAlreadyChecked) {
+    log.debug("AUTH", "No API key provided (internal call, auth already checked)");
     return;
   }
   log.debug(

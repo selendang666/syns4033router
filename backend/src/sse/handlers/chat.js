@@ -60,7 +60,7 @@ export async function handleChat(request, clientRawRequest = null, { authAlready
   const authHeader = request.headers?.["authorization"] ?? request.headers?.get?.("Authorization");
   const apiKey = extractApiKey(request);
   const settings = await getSettings();
-  logApiKeyAuth(log, authHeader && apiKey ? apiKey : null, settings.requireApiKey);
+  logApiKeyAuth(log, authHeader && apiKey ? apiKey : null, settings.requireApiKey, authAlreadyChecked);
 
   // Enforce API key if enabled in settings. `authAlreadyChecked` is set by the
   // in-process callers that run behind the dashboard session guard (Basic Chat),
