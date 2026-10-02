@@ -55,6 +55,40 @@ nilai jadi `[GODMODE]: M` — persis yangPRD perkirakan. Sekarang 19 case:
 13 shape + 8 idempotensi (satu per jalur tulis). Sebelumnya idempotensi hanya
 diuji untuk OpenAI.
 
+### CRITICAL — `/api/version/*` terbuka tanpa autentikasi
+
+`POST /api/version/shutdown` dan `POST /api/version/update` membalas **200
+tanpa session dan tanpa API key**. Yang pertama memanggil `process.exit(0)`,
+jadi siapa pun bisa mematikan router dengan satu request. Ditemukan saat audit
+auth matrix; endpoint-nya dieksekusi saat itu juga dan production perlu
+redeploy.
+
+Penyebabnya dua daftar di `middleware/auth.ts` yang saling menimpa:
+
+```js
+PUBLIC_API_PATHS = [ ..., "/api/version", ... ]      // untuk info versi
+if (PUBLIC_API_PATHS.some((p) => path === p || path.startsWith(p + "/")))
+  return next();
+```
+
+`"/api/version/shutdown".startsWith("/api/version/")` → true, jadi seluruh
+sub-path ikut jadi publik. `ALWAYS_PROTECTED` memang memuat kedua path itu,
+tapi **dead code** — cabang publik `return next()` jalan lebih dulu.
+
+Sekarang `ALWAYS_PROTECTED` dievaluasi sebelum cabang publik
+— `backend/src/middleware/auth.ts:74` · `[test]`
+
+```
+POST /api/version/shutdown   200 (mati) → 401
+POST /api/version/update     200       → 401
+GET  /api/version            200       → 200   (tetap publik)
+GET  /api/health             200       → 200
+```
+
+Guard baru `scripts/guard-auth-order.mjs` menahan kelas bug ini: ia menolak
+urutan yang salah, memastikan tiap route destruktif tercatat di
+`ALWAYS_PROTECTED`, dan menandai path publik yang menaungi path terlindungi.
+
 ### Route mati total (500 untuk semua request)
 
 - ✅ `/v1/responses` — `handleChat(request)` memakai identifier yang tidak pernah

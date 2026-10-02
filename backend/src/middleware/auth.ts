@@ -71,18 +71,25 @@ export async function authMiddleware(
   // and fall through to the unauthenticated branch.
   const path = req.path.toLowerCase();
 
-  // Allow public paths
-  if (PUBLIC_API_PATHS.some((p) => path === p || path.startsWith(p + "/")))
-    return next();
-  if (PUBLIC_PREFIXES.some((p) => path.startsWith(p)))
-    return next();
-
-  // Allow CLI token
-  if (await hasValidCliToken(req)) return next();
-
+  // ALWAYS_PROTECTED is checked first, on purpose. "/api/version" is public so
+  // the version endpoint needs no key, but the prefix match made every
+  // /api/version/* public too — including /api/version/shutdown and
+  // /api/version/update, which returned 200 and killed the server for anyone
+  // who asked. The ALWAYS_PROTECTED entries were dead code behind this return.
   const alwaysProtected = ALWAYS_PROTECTED.some(
     (p) => path === p || path.startsWith(p + "/")
   );
+  if (alwaysProtected) {
+    // fall through to the credential checks below
+  } else {
+    if (PUBLIC_API_PATHS.some((p) => path === p || path.startsWith(p + "/")))
+      return next();
+    if (PUBLIC_PREFIXES.some((p) => path.startsWith(p)))
+      return next();
+  }
+
+  // Allow CLI token
+  if (await hasValidCliToken(req)) return next();
 
   try {
     const settings = await getSettings();
