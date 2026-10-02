@@ -56,6 +56,33 @@ export default function PlaygroundTab({ prompts, setToast, initialDraft }) {
       .catch(() => setProviders([]));
   }, []);
 
+  // Pre-fill from the library, not from a blank draft. Both fields started
+  // empty, so opening the tab and pressing Run produced a 2.5s toast and no
+  // request — it read as a dead button — and once a model was chosen the run
+  // still reported "No prompt supplied for this run" because Source defaulted
+  // to the empty draft. Load the first entry and its model, which is what
+  // someone opening this tab is about to test.
+  useEffect(() => {
+    setForm((f) => {
+      if (f.entryId) return f;
+      const entry = prompts.find((p) => p.modelTarget && p.modelTarget !== "*") || prompts[0];
+      if (entry) {
+        return {
+          ...f,
+          entryId: entry.id,
+          prompt: entry.prompt,
+          model: entry.modelTarget !== "*" ? entry.modelTarget : f.model,
+        };
+      }
+      if (f.model) return f;
+      const firstModel = providers
+        .flatMap((c) => c.models || [])
+        .map((m) => (typeof m === "string" ? m : m?.id || m?.model))
+        .filter(Boolean)[0];
+      return firstModel ? { ...f, model: firstModel } : f;
+    });
+  }, [prompts, providers]);
+
   const pickEntry = useCallback(
     (id) => {
       const e = prompts.find((p) => p.id === id);
@@ -169,9 +196,14 @@ export default function PlaygroundTab({ prompts, setToast, initialDraft }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy || !form.model.trim()} title={!form.model.trim() ? "Isi model dulu" : undefined}>
             {busy ? "Running…" : "Run"}
           </Button>
+          {!form.model.trim() && (
+            <span className="text-xs text-amber-500">
+              Isi model dulu — klik “Browse model” atau ketik di kolom Model.
+            </span>
+          )}
           {result && (
             <span className="text-[11px] text-text-muted">{result.durationMs} ms · {result.model}</span>
           )}
