@@ -55,7 +55,6 @@ const PROTECTED_API_PATHS = [
   "/api/pricing",
   "/api/tags",
   "/api/tunnel",
-  "/api/mcp",
   "/api/cli-tools",
   "/api/automation",
 ];

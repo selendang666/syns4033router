@@ -114,12 +114,20 @@ export default function CombosPage() {
         delete updated[comboName];
       }
       
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comboStrategies: updated }),
       });
-      
+
+      // Only reflect the toggle once the server confirmed it. An expired session
+      // answers 401, and showing "on" for a setting that was never saved is the
+      // same class of lie as a boolean stored as the wrong type.
+      if (!res.ok) {
+        alert("Failed to save the strategy — it was not stored");
+        return;
+      }
+
       setComboStrategies(updated);
     } catch (error) {
       console.log("Error updating combo strategy:", error);

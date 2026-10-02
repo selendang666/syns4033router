@@ -290,6 +290,40 @@ undefined      → ok (tidak diubah)
 Routing combo sendiri sehat: combo berisi satu model meneruskan ke model itu,
 dan `round-robin` dengan dua model memang membagi panggilan.
 
+### Rekaman usage bisa hilang tanpa jejak
+
+`saveUsageStats` berhenti senyap kalau provider tidak mengirim usage dan
+tidak ada konten yang bisa diestimasi:
+
+```js
+if (inTokens === 0 && outTokens === 0) return;   // nol log
+saveRequestUsage({...}).catch(() => {});          // error ditelan
+```
+
+Request seperti itu **tidak muncul di Usage sama sekali** — bukan sebagai baris
+nol, tapi hilang. Dan kalau penulisan DB gagal, tidak ada apa pun yang
+tercetak, sehingga DB rusak terlihat sama dengan hari yang sepi.
+
+Keduanya sekarang berbunyi: bail mencetak peringatan yang menyebut provider,
+dan kegagalan menulis mencetak errornya. Ini juga yang membuat "stats beku"
+sulit didiagnosis — tanpa log, penyebabnya tidak pernah terlihat.
+— `backend/open-sse/handlers/chatCore/requestDetail.js` · `[test]`
+
+### `/api/mcp` terdaftar protected tapi route-nya tidak ada
+
+`PROTECTED_API_PATHS` memuat `/api/mcp`, sementara tidak ada route
+`/api/mcp` di backend — permintaannya 404. Tidak bisa dieksploitasi, hanya
+entri basi yang menyesatkan pembaca kode
+— `backend/src/middleware/auth.ts` · `[test]`
+
+### Toggle strategi combo menampilkan "on" walau gagal disimpan
+
+`handleToggleRoundRobin` mengabaikan hasil `PATCH /api/settings` lalu
+memperbarui state lokal apa pun hasilnya. Session kedaluwarsa menjawab 401,
+dan toggle tetap tampil aktif padahal tidak ada yang tersimpan — kelas yang
+sama dengan boolean tersimpan sebagai tipe yang salah
+— `frontend/src/pages/combos/page.jsx` · `[test]`
+
 ### Media / dashboard
 
 - ✅ Quota Tracker tidak lagi menyembunyikan koneksi yang tidak mendukung

@@ -78,7 +78,16 @@ export function saveUsageStats({ provider, model, tokens, connectionId, apiKey, 
   const inTokens = tokens.input_tokens ?? tokens.prompt_tokens ?? 0;
   const outTokens = tokens.output_tokens ?? tokens.completion_tokens ?? 0;
 
-  if (inTokens === 0 && outTokens === 0) return;
+  if (inTokens === 0 && outTokens === 0) {
+    // Not silent. A provider that returns no usage and produced no content we
+    // can estimate leaves the Usage page short of one request with nothing on
+    // screen to explain it — and the write below swallows its own failures, so
+    // a broken DB looks identical to a quiet day.
+    console.warn(
+      `[${label}] ${provider || "unknown"} | no usage reported by provider and nothing to estimate — request will not appear in Usage`,
+    );
+    return;
+  }
 
   const time = new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const accountSuffix = connectionId ? ` | account=${connectionId.slice(0, 8)}...` : "";
@@ -98,5 +107,8 @@ export function saveUsageStats({ provider, model, tokens, connectionId, apiKey, 
     connectionId: connectionId || undefined,
     apiKey: apiKey || undefined,
     endpoint: endpoint || null
-  }).catch(() => {});
+  }).catch((err) => {
+    // Swallowing this makes a failed write indistinguishable from no traffic.
+    console.error(`[${label}] failed to record usage for ${provider}/${model}:`, err?.message || err);
+  });
 }
