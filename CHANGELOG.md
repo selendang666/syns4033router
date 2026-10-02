@@ -258,7 +258,23 @@ combo models: []     →  {"error":{"message":"Invalid model format"}}
 combo models: "str"  →  {"error":{"message":"No active credentials for provider: openai"}}
 ```
 
-`models` kini divalidasi di boundary dan di `PUT` juga
+Field `kind` punya masalah serupa dan lebih buruk: `kind` **bukan** strategi —
+frontend memakainya sebagai penanda supaya combo media tidak muncul di daftar
+LLM (`filter(c => !c.kind)`), dan tidak pernah mengirimnya saat membuat combo.
+Tapi API menerimanya, dan objek di sini mencapai kolom teks lalu menggagalkan
+seluruh create dengan **500**.
+
+```
+kind: {"x": 1}  →  500
+kind: 123       →  201  (disimpan, tidak pernah dibaca)
+```
+
+Sekarang `kind` juga divalidasi: harus string atau null. Nilai string apa pun
+diterima, karena penandanya memang bebas
+— `backend/src/routes/combos/route.ts`,
+  `backend/src/routes/combos/[id]/route.ts` · `[test]`
+
+`models` juga divalidasi di boundary dan di `PUT`
 — `backend/src/routes/combos/route.ts`,
   `backend/src/routes/combos/[id]/route.ts` · `[test]`
 

@@ -11,6 +11,18 @@ const VALID_NAME_REGEX = /^[a-zA-Z0-9_.\-]+$/;
 // verbatim and surfaced as "modelStr.includes is not a function" to the caller.
 // An empty list passed too, then failed at request time with "Invalid model
 // format", which says nothing about the real problem.
+// `kind` is not a strategy — the frontend uses it as a marker so media-kind
+// combos stay out of the LLM list (filter(c => !c.kind)). It is never sent
+// when creating a combo, but the API accepts it, and an object here reached
+// the text column and failed the whole create with a 500.
+export function validateComboKind(kind) {
+  if (kind === undefined || kind === null) return { ok: true };
+  if (typeof kind !== "string") {
+    return { ok: false, error: "Kind must be a string" };
+  }
+  return { ok: true };
+}
+
 export function validateComboModels(models) {
   if (models === undefined) return { ok: true };
   if (!Array.isArray(models)) return { ok: false, error: "Models must be an array" };
@@ -56,6 +68,11 @@ export async function POST_handler(req, res) {
     const modelsCheck = validateComboModels(models);
     if (!modelsCheck.ok) {
       return res.status(400).json({ error: modelsCheck.error });
+    }
+
+    const kindCheck = validateComboKind(kind);
+    if (!kindCheck.ok) {
+      return res.status(400).json({ error: kindCheck.error });
     }
 
     const combo = await createCombo({ name, models: models || [], kind: kind || null });
