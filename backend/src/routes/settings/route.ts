@@ -43,9 +43,49 @@ export async function GET(req, res) {
   }
 }
 
+// Security-critical switches. These are read as booleans but the frontend
+// reads them with `!== false`, so anything that is not exactly `false` shows as
+// enabled in the UI — while auth.ts reads `?? false`, where null reads as
+// disabled. Storing a non-boolean opened the whole dashboard while the toggle
+// still said "Require login: on". Normalise at the boundary instead of trusting
+// the caller: a real toggle sends a boolean, anything else is a mistake.
+const BOOLEAN_SETTINGS = [
+  "requireLogin",
+  "requireApiKey",
+  "tunnelDashboardAccess",
+  "outboundProxyEnabled",
+  "cavemanEnabled",
+  "enableObservability",
+  "enableRequestLogs",
+  "enableTranslator",
+  "debugMitm",
+  "debugRoutes",
+];
+
+function coerceBooleans(body) {
+  for (const key of BOOLEAN_SETTINGS) {
+    if (!Object.prototype.hasOwnProperty.call(body, key)) continue;
+    const value = body[key];
+    if (typeof value === "boolean") continue;
+    if (value === null || value === undefined) {
+      // Absent means "not configured", and every one of these defaults to on
+      // where it gates access — so fall back to true rather than false.
+      body[key] = true;
+      continue;
+    }
+    if (typeof value === "string") {
+      const lowered = value.trim().toLowerCase();
+      if (["true", "1", "yes", "on"].includes(lowered)) { body[key] = true; continue; }
+      if (["false", "0", "no", "off", ""].includes(lowered)) { body[key] = false; continue; }
+    }
+    body[key] = Boolean(value);
+  }
+}
+
 export async function PATCH_handler(req, res) {
   try {
     const body = req.body;
+    coerceBooleans(body);
 
     // If updating password, hash it
     if (body.newPassword) {

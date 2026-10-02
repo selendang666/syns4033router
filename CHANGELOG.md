@@ -117,6 +117,48 @@ urutan yang salah, memastikan tiap route destruktif tercatat di
 - ✅ Regression guard ditambahkan sebagai gate permanen:
       `scripts/guard-secure-defaults.mjs`, `scripts/guard-auth-path.mjs`
 
+### Settings menerima nilai non-boolean pada field auth
+
+`PATCH /api/settings` meneruskan body apa adanya ke `updateSettings`, tanpa
+validasi tipe. Dua sisi membaca boolean itu dengan cara berbeda:
+
+```js
+frontend  setRequireLogin(data.requireLogin !== false)      // null → true
+backend   settings?.requireLogin ?? false                   // null → false
+```
+
+Akibatnya `requireLogin: null` mematikan seluruh dashboard **sambil toggle di UI
+tetap menampilkan "Require login: on"** — operator melihat aman, router terbuka.
+Terbukti di instance lokal:
+
+```
+PATCH {"requireLogin": null}  →  200, tersimpan sebagai null
+GET /api/settings tanpa session → 200      (auth mati)
+GET /api/keys     tanpa session → 200
+GET /api/providers tanpa session → 200
+frontend dbacanya                → null !== false = true → "ON"
+```
+
+`requireLogin: "yes"` juga tersimpan sebagai string, dan `123`/`""` ikut
+diterima apa adanya.
+
+Field boolean yang meng-gate akses kini dinormalkan di boundary — nilai bukan
+boolean dipetakan ke boolean, `null`/`undefined` menjadi `true` (default yang
+mengamankan, karena `?? false` akan mematikan auth)
+— `backend/src/routes/settings/route.ts` · `[test]`
+
+```
+kirim null     → tersimpan True  (bool)
+kirim "yes"    → tersimpan True  (bool)
+kirim "false"  → tersimpan False (bool)
+kirim 123      → tersimpan True  (bool)
+kirim ""       → tersimpan False (bool)
+set null → /api/settings tanpa session = 401  (dulu 200)
+```
+
+Boolean asli tetap dihormati: operator tetap bisa mematikan auth lewat UI, itu
+fiturnya, bukan bug.
+
 ### Ollama shim
 
 - ✅ `POST /v1/api/chat` membalas `200` dengan stream kosong untuk **setiap**
