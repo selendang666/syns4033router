@@ -236,6 +236,44 @@ Diganti ke `/api/v1/key`, endpoint yang diautentikasi
       yang dilaporkan sebagai keberhasilan
       — `backend/src/routes/provider-nodes/validate/route.ts:3`
 
+### Combo menerima `models` dalam bentuk apa saja
+
+`POST /api/combos` memvalidasi `name` dengan ketat — spasi dan path traversal
+ditolak — tapi `models` diteruskan tanpa pemeriksaan. Semua bentuk ini diterima
+dengan `201`:
+
+```
+models: []            → 201
+models: "bukan-array" → 201
+models: [1, 2]        → 201
+```
+
+Yang discharged ke routing adalah kode yang mengasumsikan string — ia memanggil
+`modelStr.includes()` — sehingga bentuk non-string sampai apa adanya dan muncul
+ke pemanggil sebagai error internal:
+
+```
+combo models: [1,2]  →  {"error":{"message":"modelStr.includes is not a function"}}
+combo models: []     →  {"error":{"message":"Invalid model format"}}
+combo models: "str"  →  {"error":{"message":"No active credentials for provider: openai"}}
+```
+
+`models` kini divalidasi di boundary dan di `PUT` juga
+— `backend/src/routes/combos/route.ts`,
+  `backend/src/routes/combos/[id]/route.ts` · `[test]`
+
+```
+undefined      → ok (tidak diubah)
+[]             → 400 "Add at least one model to the combo"
+"str"          → 400 "Models must be an array"
+[1,2]          → 400 "Each model must be a non-empty string"
+[""]           → 400 "Each model must be a non-empty string"
+["oc/…"]       → ok
+```
+
+Routing combo sendiri sehat: combo berisi satu model meneruskan ke model itu,
+dan `round-robin` dengan dua model memang membagi panggilan.
+
 ### Media / dashboard
 
 - ✅ Quota Tracker tidak lagi menyembunyikan koneksi yang tidak mendukung
@@ -344,10 +382,12 @@ dibutuhkan — katalognya sudah utuh di client.
 
 - ⚠️ **Cakupan model belum lengkap.** Prompt yang masuk lewat jalur di luar
       13 shape yang sudah ditangani.
-- ⚠️ **Efek jailbreak belum pernah dilihat dari respons model asli.** Yang
-      terbukti: prompt mendarat di slot system yang benar pada 13 shape, dan
-      retry tidak menumpuk pada 5× injeksi di 8 jalur. Yang belum: dampaknya
-      terhadap jawaban model — butuh provider credential sungguhan.
+- ⚠️ **Prompt sudah terbukti mengubah jawaban model, tapi hanya lewat satu
+      provider.** Teramati di `oc/space-bunny-free`: prompt "reply dengan
+      exactly: VVEXACTc11e5" menghasilkan jawaban persis `VVEXACTc11e5`, dan
+      prompt wildcard menghasilkan `VVGLOB94573`. Yang belum terbukti: apakah
+      behave sama di provider yang butuh credential berbayar (Claude, OpenAI,
+      Gemini) — itu butuh key asli yang belum ada di instalasi ini.
 - ⚠️ **`hermes verify` belum punya CI.** GitHub Actions masih nonaktif
       (0 workflow, `enabled: false`), jadi gate hanya jalan lokal — siapa pun
       yang fork harus menjalankan `hermes verify` sendiri.

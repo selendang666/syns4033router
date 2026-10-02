@@ -1,5 +1,6 @@
 
 import { getComboById, updateCombo, deleteCombo, getComboByName } from "../../../lib/localDb.js";
+import { validateComboModels } from "../route.js";
 import { resetComboRotation } from "../../../../open-sse/services/combo.js";
 
 // Validate combo name: only a-z, A-Z, 0-9, -, _
@@ -41,6 +42,11 @@ export async function PUT_handler(req, res, { params }) {
       }
     }
     
+    const modelsCheck = validateComboModels(body.models);
+    if (!modelsCheck.ok) {
+      return res.status(400).json({ error: modelsCheck.error });
+    }
+
     // Capture previous name to invalidate rotation state on rename
     const prev = await getComboById(id);
     const combo = await updateCombo(id, body);
