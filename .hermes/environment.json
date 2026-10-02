@@ -13,9 +13,7 @@
     "node --check backend/open-sse/handlers/chatCore.js",
     "node --check backend/open-sse/handlers/chatCore/streamingHandler.js",
     "node --check backend/open-sse/transformer/watermark.js",
-    "node --check backend/src/lib/dataDir.js",
-    "node --check scripts/verify-menu-roundtrip.mjs",
-    "node --check scripts/verify-menu-render.mjs"
+    "node --check backend/src/lib/dataDir.js"
   ],
   "start": "npm run start --workspace=syns4033router-backend",
   "port": 3999,

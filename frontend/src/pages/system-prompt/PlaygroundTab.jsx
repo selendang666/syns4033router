@@ -56,32 +56,40 @@ export default function PlaygroundTab({ prompts, setToast, initialDraft }) {
       .catch(() => setProviders([]));
   }, []);
 
+  // What the run will actually hit. A global entry is not tied to a model, so
+  // this is a convenience rather than a constraint the user has to satisfy.
+  const isGlobal = !!form.entryId && prompts.find((p) => p.id === form.entryId)?.modelTarget === "*";
+
+  const defaultModel = useCallback(() => {
+    const fromEntry = prompts.find((p) => p.modelTarget && p.modelTarget !== "*");
+    if (fromEntry) return fromEntry.modelTarget;
+    return providers
+      .flatMap((c) => c.models || [])
+      .map((m) => (typeof m === "string" ? m : m?.id || m?.model))
+      .filter(Boolean)[0] || "";
+  }, [prompts, providers]);
+
+  const effectiveModel = form.model.trim() || defaultModel();
+
   // Pre-fill from the library, not from a blank draft. Both fields started
   // empty, so opening the tab and pressing Run produced a 2.5s toast and no
   // request — it read as a dead button — and once a model was chosen the run
   // still reported "No prompt supplied for this run" because Source defaulted
-  // to the empty draft. Load the first entry and its model, which is what
-  // someone opening this tab is about to test.
+  // to the empty draft. Load the first entry, which is what someone opening
+  // this tab came to test; defaultModel covers the model field.
   useEffect(() => {
     setForm((f) => {
       if (f.entryId) return f;
       const entry = prompts.find((p) => p.modelTarget && p.modelTarget !== "*") || prompts[0];
-      if (entry) {
-        return {
-          ...f,
-          entryId: entry.id,
-          prompt: entry.prompt,
-          model: entry.modelTarget !== "*" ? entry.modelTarget : f.model,
-        };
-      }
-      if (f.model) return f;
-      const firstModel = providers
-        .flatMap((c) => c.models || [])
-        .map((m) => (typeof m === "string" ? m : m?.id || m?.model))
-        .filter(Boolean)[0];
-      return firstModel ? { ...f, model: firstModel } : f;
+      if (!entry) return f.model ? f : { ...f, model: defaultModel() };
+      return {
+        ...f,
+        entryId: entry.id,
+        prompt: entry.prompt,
+        model: entry.modelTarget !== "*" ? entry.modelTarget : f.model,
+      };
     });
-  }, [prompts, providers]);
+  }, [prompts, providers, defaultModel]);
 
   const pickEntry = useCallback(
     (id) => {
@@ -98,7 +106,11 @@ export default function PlaygroundTab({ prompts, setToast, initialDraft }) {
 
   const run = async (e) => {
     e?.preventDefault?.();
-    if (!form.model) return setToast("⚠ Pilih model dulu");
+    // A global entry is not bound to a model, so refusing to run without one
+    // forced a pick for the one entry that does not need one. Fall back to the
+    // first model that has its own entry, then to anything a provider offers.
+    const model = form.model.trim() || defaultModel();
+    if (!model) return setToast("⚠ Belum ada model tersedia");
     if (!form.message.trim()) return setToast("⚠ Message wajib diisi");
     setBusy(true);
     setResult(null);
@@ -107,7 +119,7 @@ export default function PlaygroundTab({ prompts, setToast, initialDraft }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: form.model,
+          model,
           message: form.message,
           prompt: form.entryId ? undefined : form.prompt,
           entryId: form.entryId || undefined,
@@ -196,10 +208,15 @@ export default function PlaygroundTab({ prompts, setToast, initialDraft }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button type="submit" disabled={busy || !form.model.trim()} title={!form.model.trim() ? "Isi model dulu" : undefined}>
+          <Button type="submit" disabled={busy || !effectiveModel} title={!effectiveModel ? "Belum ada model tersedia" : undefined}>
             {busy ? "Running…" : "Run"}
           </Button>
-          {!form.model.trim() && (
+          {isGlobal && (
+            <span className="text-xs text-text-muted">
+              Global — diuji ke <span className="text-text-main">{effectiveModel}</span>. Ganti kolom Model untuk tes yang lain.
+            </span>
+          )}
+          {!form.model.trim() && !isGlobal && (
             <span className="text-xs text-amber-500">
               Isi model dulu — klik “Browse model” atau ketik di kolom Model.
             </span>
