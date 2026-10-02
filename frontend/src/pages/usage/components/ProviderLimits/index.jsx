@@ -164,32 +164,8 @@ async function reconcileConnectionsPage(fetchConnections, targetPage) {
   return nextConnections;
 }
 
-const QUOTA_CACHE_KEY = "quotaCacheData";
 
-function getQuotaCache() {
-  if (typeof window === "undefined") return {};
-  try {
-    const cached = window.localStorage.getItem(QUOTA_CACHE_KEY);
-    return cached ? JSON.parse(cached) : {};
-  } catch (error) {
-    console.error("Error reading quota cache:", error);
-    return {};
-  }
-}
 
-function setQuotaCache(connectionId, quotaEntry) {
-  if (typeof window === "undefined") return;
-  try {
-    const cache = getQuotaCache();
-    cache[connectionId] = {
-      ...quotaEntry,
-      cachedAt: new Date().toISOString(),
-    };
-    window.localStorage.setItem(QUOTA_CACHE_KEY, JSON.stringify(cache));
-  } catch (error) {
-    console.error("Error writing quota cache:", error);
-  }
-}
 
 const REFRESH_INTERVAL_MS = 60000; // 60 seconds
 const DEPLETED_QUOTA_THRESHOLD = 5; // percent
@@ -341,7 +317,6 @@ export default function ProviderLimits() {
             ...prev,
             [connectionId]: quotaEntry,
           }));
-          setQuotaCache(connectionId, quotaEntry);
           return;
         }
 
@@ -365,7 +340,6 @@ export default function ProviderLimits() {
         ...prev,
         [connectionId]: quotaEntry,
       }));
-      setQuotaCache(connectionId, quotaEntry);
     } catch (error) {
       // console.error(
       //   `[ProviderLimits] Error fetching quota for ${provider} (${connectionId}):`,
@@ -411,21 +385,6 @@ export default function ProviderLimits() {
             delete next[id];
             return next;
           });
-
-          if (typeof window !== "undefined") {
-            try {
-              const cache = getQuotaCache();
-              if (cache[id]) {
-                delete cache[id];
-                window.localStorage.setItem(
-                  QUOTA_CACHE_KEY,
-                  JSON.stringify(cache),
-                );
-              }
-            } catch (e) {
-              console.error("Error deleting cache entry:", e);
-            }
-          }
 
           await reconcileConnectionsPage(fetchConnections, page);
         }
@@ -649,7 +608,12 @@ export default function ProviderLimits() {
           countdownRef.current = null;
         }
       } else if (autoRefresh && hasHydrated) {
-        // Resume auto-refresh when tab becomes visible
+        // Resume auto-refresh when tab becomes visible. Clear first: this branch
+        // can run without the hidden branch having fired, and assigning a new
+        // handle over intervalRef would leave the old timer running — two pollers
+        // hitting every provider's quota API in parallel.
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (countdownRef.current) clearInterval(countdownRef.current);
         intervalRef.current = setInterval(refreshAll, REFRESH_INTERVAL_MS);
         countdownRef.current = setInterval(() => {
           setCountdown((prev) => (prev <= 1 ? 60 : prev - 1));
@@ -692,15 +656,25 @@ export default function ProviderLimits() {
       if (!targetIds.length || bulkToggling) return;
       setBulkToggling(true);
       try {
-        await Promise.all(
-          targetIds.map((id) =>
-            fetch(`/api/providers/${id}`, {
+        const results = await Promise.all(
+          targetIds.map(async (id) => {
+            const res = await fetch(`/api/providers/${id}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ isActive }),
-            }),
-          ),
+            });
+            return { id, ok: res.ok, status: res.status };
+          }),
         );
+        // A rejected fetch only rejects on network failure, so an expired session
+        // or a 500 lands in the array as a resolved promise and disappears here.
+        const failed = results.filter((r) => !r.ok);
+        if (failed.length) {
+          alert(
+            `Failed to update ${failed.length} of ${results.length} connections ` +
+              `(${failed.map((f) => f.status).join(", ")})`,
+          );
+        }
         await reconcileConnectionsPage(fetchConnections, page);
       } catch (error) {
         console.error("Error bulk toggling connections:", error);
@@ -779,7 +753,12 @@ export default function ProviderLimits() {
   const isCustomPageSize = !ACCOUNT_PAGE_SIZE_OPTIONS.includes(pageSize);
   const pageSizeLabel = getPageSizeLabel(pageSize, isCustomPageSize);
 
-  if (!connectionsLoading && !hasEligibleConnections) {
+  // Gate on the visible list, not on quota eligibility. Connections that report
+  // no account quota are still real connections and still belong on this page —
+  // each one renders its own "no quota API" explanation from /api/usage/:id.
+  // Gating on eligibility hid all three of them behind "No Providers Connected"
+  // while the server was reporting totalConnections: 3.
+  if (!connectionsLoading && !hasVisibleConnections) {
     return (
       <Card padding="lg">
         <div className="text-center py-12">

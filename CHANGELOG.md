@@ -344,6 +344,54 @@ sama dengan boolean tersimpan sebagai tipe yang salah
 
 ---
 
+### Quota: "No Providers Connected" padahal ada 3 koneksi
+
+Halaman Quota menampilkan pesan kosong itu bila
+`totals.eligibleConnections === 0`. Ketiga koneksi yang ada melaporkan
+`quotaSupported: false`, jadi eligibleConnections nol — dan seluruh daftar
+disembunyikan, walaupun server melaporkan `totalConnections: 3`.
+
+```
+GET /api/providers/client  →  totalConnections 3
+                              providerFilteredConnections 3
+                              eligibleConnections 0        ← gate
+halaman                      →  "No Providers Connected"
+```
+
+Ini membatalkan hasil perbaikan sebelumnya yang sudah menambahkan semua koneksi
+ke daftar: kolom `quotaSupported: false` membuat mereka tetap ada, lalu gate ini menyembunyikan
+kembali. Gate sekarang memakai daftar yang terlihat, dan tiap koneksi yang tidak
+punya API quota tetap tampil dengan penjelasannya sendiri dari
+`/api/usage/{connectionId}`.
+— `frontend/src/pages/usage/components/ProviderLimits/index.jsx` · `[test]`
+
+### Quota: cache localStorage ditulis tapi tidak pernah dibaca
+
+`quotaCacheData` ditulis setiap kali quota diambil, dengan `cachedAt` — tapi
+`cachedAt` tidak pernah diperiksa, tidak ada TTL, dan cache tidak pernah dipakai
+mengisi state: `quotaData` selalu mulai dari `{}`. Yang terjadi cuma kunci
+localStorage bertambah terus di setiap polling dan tidak pernah dikosongkan
+kecuali koneksi dihapus. Dead weight yangDiam-diam memakan kuota storage.
+Dihapus seluruhnya
+— `frontend/src/pages/usage/components/ProviderLimits/index.jsx` · `[test]`
+
+### Quota: bulk toggle tidak memeriksa hasil
+
+`bulkSetActive` memakai `Promise.all` atas `fetch` yang tidak checking
+`res.ok`. `fetch` hanya menolak pada kegagalan jaringan, jadi session
+kedaluwarsa (401) atau 500 masuk sebagai promise yang berhasil resolve dan
+lenyap. Tiga handler lain di file yang sama sudah memeriksanya
+— `frontend/src/pages/usage/components/ProviderLimits/index.jsx` · `[test]`
+
+### Quota: auto-refresh bisa jadi dua poller
+
+Cabang yang menyala kembali ketika tab kembali visible membuat
+`setInterval` baru tanpa membersihkan yang lama. Jalur itu bisa berjalan
+tanpa cabang "hidden" sempat menyala, dan menimpa `intervalRef` meninggalkan
+timer lama hidup — dua poller memanggil API quota tiap provider bersamaan.
+Kini dibersihkan dulu sebelum dibuat
+— `frontend/src/pages/usage/components/ProviderLimits/index.jsx` · `[test]`
+
 ### Playground global: model bukan lagi syarat
 
 Entry global (`modelTarget: "*"`) terikat ke model apa pun — itu
