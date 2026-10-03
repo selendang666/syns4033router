@@ -344,6 +344,26 @@ sama dengan boolean tersimpan sebagai tipe yang salah
 
 ---
 
+### MITM: kegagalan simpan model mapping tidak pernah kelihatan
+
+`saveMappings` di `MitmToolCard` memanggil `PUT .../alias` dan membuang
+responsnya. Backend menolak menyimpan mapping sebelum DNS tool aktif
+(403), jadi input tetap menampilkan nilai yang diketik seolah sudah
+tersimpan — lalu hilang begitu halaman dimuat ulang.
+
+Dua lapis yang harusnya bekerja sama tidak sama-sama bekerja:
+
+- backend menolak dengan benar (403, bukan 200 seperti sebelumnya)
+- frontend tidak pernah membaca status itu
+
+Sekarang respons diperiksa, nilai yang gagal disimpan dikembalikan seperti
+sedia, dan errornya ditunjukkan di kartu. Error-nya tidak memakai
+`modalError` yang sudah ada: state itu hanya dirender di dalam modal
+password sudo, sedangkan penyimpanan mapping terjadi saat modal itu
+tertutup, jadi errornya tidak akan pernah terlihat. State terpisah
+`mappingError` dipakai dan dirender di luar modal.
+— `frontend/src/pages/cli-tools/components/MitmToolCard.jsx` · `[test]`
+
 ### 43 penolakan yang diam-diam terkirim sebagai 200
 
 Audit `/dashboard/mitm` menemukan pola ini di alias MITM:

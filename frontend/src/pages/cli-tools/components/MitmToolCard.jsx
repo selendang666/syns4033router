@@ -32,6 +32,7 @@ export default function MitmToolCard({
   const [sudoPassword, setSudoPassword] = useState("");
   const [pendingDnsAction, setPendingDnsAction] = useState(null);
   const [modalError, setModalError] = useState(null);
+  const [mappingError, setMappingError] = useState(null);
   const [modelMappings, setModelMappings] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [currentEditingAlias, setCurrentEditingAlias] = useState(null);
@@ -55,17 +56,30 @@ export default function MitmToolCard({
 
   const saveMappings = useCallback(async (mappings) => {
     try {
-      await fetch("/api/cli-tools/antigravity-mitm/alias", {
+      const res = await fetch("/api/cli-tools/antigravity-mitm/alias", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tool: tool.id, mappings }),
       });
-    } catch { /* ignore */ }
+      if (!res.ok) {
+        // The backend refuses to store mappings until DNS is on for this tool.
+        // Leaving this unchecked let the input keep the edited value as if it
+        // had been saved, so a reload silently reverted it.
+        const data = await res.json().catch(() => ({}));
+        setModelMappings((prev) => {
+          const restored = { ...prev };
+          for (const k of Object.keys(mappings)) delete restored[k];
+          return restored;
+        });
+        setMappingError(data.error || "Could not save model mapping");
+        await loadSavedMappings();
+        return;
+      }
+      setMappingError(null);
+    } catch (e) {
+      setMappingError(e.message || "Network error");
+    }
   }, [tool.id]);
-
-  const handleMappingBlur = (alias, value) => {
-    saveMappings({ ...modelMappings, [alias]: value });
-  };
 
   const handleModelMappingChange = (alias, value) => {
     setModelMappings(prev => ({ ...prev, [alias]: value }));
@@ -266,7 +280,14 @@ export default function MitmToolCard({
       </Card>
 
       {/* Password Modal */}
-      {showPasswordModal && (
+      {mappingError && (
+          <div className="flex items-start gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600 dark:text-red-400">
+            <span className="material-symbols-outlined text-[14px] mt-0.5 shrink-0">error</span>
+            <span>{mappingError}</span>
+          </div>
+        )}
+
+        {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 flex w-full max-w-sm flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-xl sm:p-6">
             <h3 className="font-semibold text-text-main">Sudo Password Required</h3>
