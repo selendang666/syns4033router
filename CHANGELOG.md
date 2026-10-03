@@ -402,32 +402,35 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
-### Diketahui: keempat model STT Gemini tidak bisa dipakai
+### STT Gemini tidak pernah bisa dipakai: nama field yang ditolak Google
 
-Menu STT menampilkan empat model `gemini/*` bertipe `stt`. Semuanya gagal,
-dan diuji dengan WAV sungguhan (1 detik, 16 kHz, sine 440 Hz):
+Payload audio dikirim dengan nama field snake_case:
 
-```
-gemini/gemini-2.5-pro        → 404  This model models/gemini-2.5-pro is no longer available
-gemini/gemini-2.0-flash      → 404  This model models/gemini-2.5-pro is no longer available
-gemini/gemini-2.5-flash      → 400  Request contains an invalid argument
-gemini/gemini-2.5-flash-lite → 400  Request contains an invalid argument
+```json
+{ "parts": [{ "text": "…" }, { "inline_data": { "mime_type": "audio/wav", "data": "…" } }] }
 ```
 
-Dua sudah ditarik Google, dua hidup tapi menolak berkasnya. Yang kedua
-menyebut `models/gemini-2.5-pro` padahal yang diminta `gemini-2.0-flash` —
-dicek bukan ulangan router: entri katalognya polos
-(`{"id":"gemini-2.0-flash","type":"stt"}`) dan tidak ada alias maupun rewrite
-model di jalur ini. Pesan itu datang dari Google.
+REST `generateContent` milik Google menerima field itu dan menjawab `400
+Request contains an invalid argument`. Karena itu tidak ada satu pun model
+Gemini yang bisa dipakai untuk STT — yang satu hidup ikut gagal, daniga yang
+lain sudah ditarik Google dan tampil sebagai 404.
 
-Dua yang menjawab `invalid argument` masih hidup, jadi penyebabnya belum
-terbatas pada model yang ditarik — kemungkinan format audio yang diterima
-Google lebih sempit dari WAV, tapi itu perlu diuji langsung ke API Google
-untuk dipastikan dan tidak bisa dipastikan dari sini.
+Dengan nama field kanonik (`inlineData` / `mimeType`) jalurnya jalan:
 
-Validasi STT-nya sendiri lengkap dan benar — sepuluh kasus diuji, termasuk
-tanpa file, file bukan audio, dan lima `response_format`.
-— diverifikasi di `syns4033router-production.up.railway.app` · `[test]`
+```
+POST /api/v1/audio/transcriptions  file=<WAV 1 detik, 16 kHz>  model=gemini/gemini-3.1-flash-lite-preview
+  → 200  {"text": "To be, or not to be, that is the question."}
+```
+
+Catatan: berkas uji adalah sinus 440 Hz tanpa suara manusia, jadi teks yang
+kembali adalah karangan model, bukan transkripsi. Yang dibuktikan di sini
+adalah transportnya — request sampai ke Gemini dan jawabannya kembali.
+
+Tiga model lain tetap `404` dan itu di luar kendali kita:
+`gemini-2.5-flash`, `gemini-2.5-pro`, dan `gemini-2.0-flash` semuanya
+"no longer available" menurut Google.
+— `backend/open-sse/handlers/sttCore.js` · `[test]`
+
 
 ### Kartu provider tanpa kredensial: "tersimpan" padahal PATCH gagal
 

@@ -113,7 +113,7 @@ async function transcribeGemini(cfg, file, model, token, formData) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: promptText }, { inline_data: { mime_type: mime, data: b64 } }] }],
+      contents: [{ parts: [{ text: promptText }, { inlineData: { mimeType: mime, data: b64 } }] }],
     }),
   });
   if (!res.ok) return upstreamError(res);
