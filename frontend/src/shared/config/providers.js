@@ -58,14 +58,12 @@ export const PROVIDERS = {
   gemini: {
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
     format: "gemini",
-    clientId: "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com",
-    clientSecret: "placeholder:<<GOOGLE_CLIENT_SECRET_REDACTED>>"
+    clientId: "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
   },
   "gemini-cli": {
     baseUrl: "https://cloudcode-pa.googleapis.com/v1internal",
     format: "gemini-cli",
-    clientId: "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com",
-    clientSecret: "placeholder:<<GOOGLE_CLIENT_SECRET_REDACTED>>"
+    clientId: "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
   },
   codex: {
     baseUrl: "https://chatgpt.com/backend-api/codex/responses",
@@ -89,7 +87,6 @@ export const PROVIDERS = {
     format: "openai",
     headers: { "User-Agent": "iFlow-Cli" },
     clientId: "10009311001",
-    clientSecret: "placeholder:<<IFLOW_CLIENT_SECRET_REDACTED>>",
     tokenUrl: "https://iflow.cn/oauth/token",
     authUrl: "https://iflow.cn/oauth"
   },
@@ -100,7 +97,7 @@ export const PROVIDERS = {
     // helpers but the executor ignores it.
     baseUrl: "https://api3.qoder.sh/algo/api/v2/service/pro/sse/agent_chat_generation",
     format: "openai",
-    headers: {},
+    headers: {}
   },
   antigravity: {
     baseUrls: [
@@ -109,8 +106,7 @@ export const PROVIDERS = {
     ],
     format: "antigravity",
     headers: { "User-Agent": `antigravity/1.107.0 ${platform()}/${arch()}` },
-    clientId: "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com",
-    clientSecret: "placeholder:<<GOOGLE_CLIENT_SECRET_REDACTED>>"
+    clientId: "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
   },
   openrouter: {
     baseUrl: "https://openrouter.ai/api/v1/chat/completions",
@@ -353,16 +349,16 @@ export const PROVIDERS = {
   // GitLab Duo - OpenAI-compatible chat endpoint
   gitlab: {
     baseUrl: "https://gitlab.com/api/v4/chat/completions",
-    format: "openai",
+    format: "openai"
   },
   // CodeBuddy (Tencent) - uses device_code polling auth, no chat completions baseUrl needed
   codebuddy: {
     baseUrl: "https://www.codebuddy.ai/v2/chat/completions",
-    format: "openai",
+    format: "openai"
   },
   cb: {
     baseUrl: "https://www.codebuddy.ai/v2/chat/completions",
-    format: "openai",
+    format: "openai"
   },
   opencode: {
     baseUrl: "https://opencode.ai",
@@ -438,7 +434,7 @@ export const PROVIDERS = {
   publicai: { baseUrl: "https://api.publicai.co/v1/chat/completions", format: "openai" },
   "nous-research": { baseUrl: "https://inference-api.nousresearch.com/v1/chat/completions", format: "openai" },
   glhf: { baseUrl: "https://glhf.chat/api/openai/v1/chat/completions", format: "openai" },
-  blackbox: { baseUrl: "https://api.blackbox.ai/chat/completions", format: "openai" },
+  blackbox: { baseUrl: "https://api.blackbox.ai/chat/completions", format: "openai" }
 };
 
 export const OLLAMA_LOCAL_DEFAULT_HOST = "http://localhost:11434";

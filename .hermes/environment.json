@@ -7,6 +7,7 @@
     "npm run typecheck"
   ],
   "test": [
+    "node scripts/guard-no-creds.mjs",
     "node scripts/guard-secure-defaults.mjs",
     "node scripts/guard-auth-path.mjs",
     "node scripts/guard-auth-order.mjs",
@@ -19,12 +20,13 @@
     "node --check scripts/verify-menu-render.mjs",
     "node --check scripts/guard-auth-order.mjs"
   ],
-  "start": "npm run start --workspace=syns4033router-backend",
+  "start": "PORT=3999 npm run start --workspace=syns4033router-backend",
   "port": 3999,
   "readinessPath": "/api/health",
   "evidence": [
     "Backend must start via the npm workspace so the @/ alias loader resolves; running dist/server.js directly fails with Cannot find package '@/lib'",
     "open-sse/ is excluded from tsconfig, so it is only syntax-checked here and exercised by the E2E injection harness",
-    "Port and DATA_DIR are injected at verify time; readiness is /api/health returning {\"status\":\"ok\"}"
+    "Port and DATA_DIR are injected at verify time; readiness is /api/health returning {\"status\":\"ok\"}",
+    "scripts/guard-no-creds.mjs self-tests first (6 positive + 6 negative controls); a scanner that cannot tell them apart exits 1 rather than reporting a clean repo"
   ]
 }

@@ -11,6 +11,49 @@ Baris `[live]` = dibuktikan lewat request HTTP nyata ke production.
 
 ## Fixed
 
+### Guard anti-kredensial — `scripts/guard-no-creds.mjs`
+
+Empat guard yang ada menangkap **nol** dari 35 bug sesi ini; tidak satu pun
+berupa pemeriksaan rahasia. Yang baru ini berbeda: ia menolak commit sebelum
+rahasia sampai ke repo, dan ia **membuktikan dirinya sendiri** lebih dulu.
+
+Guard versi pertama gagal pada kontrol pertamanya: alternatif kosong di
+`^(?:|X)` match nol-panjang di posisi 0, sehingga setiap nilai terbaca "aman"
+dan scanner melaporkan nol. Versi kedua menambah saringan noise (utility class,
+kalimat UI, tipe SQL) karena pola literal menandai tujuh file bersih — guard yang
+salah menandai akan dinonaktifkan orang.
+
+| Kontrol | Hasil |
+|---|---|
+| 6 sentinel harus terdeteksi | 6/6 |
+| 8 nilai aman harus lolos | 8/8 |
+| repo discan penuh | 0 temuan, exit 0 |
+| secret dummy diinjeksi | **DITOLAK**, exit 1 |
+
+### Tiga OAuth client secret tidak lagi hardcoded di source
+
+`GOCSPX-…` (Gemini), `4Z3YjXyc…` (iFlow), dan `GOCSPX-…` (Antigravity) tertanam
+literal di lima file, lima file. Empat di antaranya backend dan masih dibaca runtime. Semuanya kini `process.env.<VAR> || ""`, dengan nama variabel di
+`backend/.env.example`.
+
+`frontend/src/shared/config/providers.js` tidak di-import siapa pun — kode mati
+yang nevertheless membawa secret hidup. Empat baris secret di sana dihapus;
+file-nya tetap dipakai sebagai referensi (tanpa secret).
+
+Setelah dipindah, nilai aslinya disimpan sebagai Railway Variables. Tanpa itu
+OAuth Gemini/iFlow/Antigravity akan gagal karena tidak ada sumber nilai lagi.
+
+## Verification
+
+| Perubahan | Command | Output | Status |
+|---|---|---|---|
+| 9 literal → `process.env` | `git diff --stat` | 5 file, 13 titik | terverifikasi |
+| sisa prefix di source | `grep -rn 'GOCSPX\|4Z3YjXyc' backend/src backend/open-sse frontend/src` | 0 baris | terverifikasi |
+| nilai dipindah ke Railway | `railway variables --json` | 3 dari 3 ADA | terverifikasi |
+| build + typecheck | `hermes verify --json` | `ok: true`, readiness 200 | terverifikasi |
+| OAuth masih jalan | live test setelah deploy | **TIDAK DIVERIFIKASI** — butuh akun OAuth aktif | belum |
+
+
 ### Jailbreak / system prompt
 
 - ✅ Claude `body.system` ditangani — dispatch `system` diperiksa **sebelum**
