@@ -415,10 +415,16 @@ POST /api/provider-nodes  {"type":"custom-embedding","baseUrl":"bukan-url"}
   sesudah → 400  Embedding base URL must be a valid URL, e.g. http://host:port …
 ```
 
-`javascript:alert(1)` juga diterima. Cabang `custom-embedding` dan
-`openai-compatible` kini memvalidasi skema dan host. Ini bug yang sama seperti
-`proxyUrl` di Proxy Pools, ditemukan lewat cara yang sama.
-— `backend/src/routes/provider-nodes/route.ts` · `[test]`
+`javascript:alert(1)` juga diterima. Ketiga cabang tipe node
+(`custom-embedding`, `openai-compatible`, `anthropic-compatible`) dan jalur edit
+`PUT /api/provider-nodes/[id]` kini memvalidasi skema dan host lewat
+`backend/src/lib/endpointUrlValidation.js`.
+
+Cabang `anthropic-compatible` dan jalur `PUT` awalnya lolos dari perbaikan
+pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
+`201` setelahnya — jadi diuji ulang, bukan diasumsikan ikut.
+— `backend/src/routes/provider-nodes/route.ts`
+— `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
 ### Proxy Pools: proxyUrl tanpa validasi sama sekali
 

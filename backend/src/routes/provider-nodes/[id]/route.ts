@@ -1,5 +1,6 @@
 
 import { deleteProviderConnectionsByProvider, deleteProviderNode, getProviderConnections, getProviderNodeById, updateProviderConnection, updateProviderNode } from "../../../models/index.js";
+import { validateEndpointUrl } from "../../../lib/endpointUrlValidation.js";
 
 // PUT /api/provider-nodes/[id] - Update provider node
 export async function PUT_handler(req, res, { params }) {
@@ -26,8 +27,9 @@ export async function PUT_handler(req, res, { params }) {
       return res.status(400).json({ error: "Invalid OpenAI compatible API type" });
     }
 
-    if (!baseUrl?.trim()) {
-      return res.status(400).json({ error: "Base URL is required" });
+    const urlCheck = validateEndpointUrl(baseUrl, "Base URL");
+    if (urlCheck.error) {
+      return res.status(400).json({ error: urlCheck.error });
     }
 
     let sanitizedBaseUrl = baseUrl.trim();
