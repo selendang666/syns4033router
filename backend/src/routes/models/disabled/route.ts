@@ -20,7 +20,7 @@ export async function GET_handler(req, res) {
 // POST /api/models/disabled  body: { providerAlias, ids: [...] }
 export async function POST_handler(req, res) {
   try {
-    const { providerAlias, ids } = req.body;
+    const { providerAlias, ids } = req.body || {};
     if (!providerAlias || !Array.isArray(ids)) {
       return res.status(400).json({ error: "providerAlias and ids[] required" });
     }

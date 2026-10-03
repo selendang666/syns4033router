@@ -34,7 +34,7 @@ async function persistRefreshedCredentials(connection, newCredentials) {
 
 export async function POST_handler(req, res) {
   try {
-    const { provider, model, body } = req.body;
+    const { provider, model, body } = req.body || {};
 
     if (!provider || !model || !body) {
       return Response.json({ success: false, error: "provider, model, and body required" }, { status: 400 });

@@ -88,7 +88,7 @@ export async function GET(req, res) {
 // POST - Backup old fields and write new settings
 export async function POST_handler(req, res) {
   try {
-    const { env } = req.body;
+    const { env } = req.body || {};
     
     if (!env || typeof env !== "object") {
       return res.status(400).json(

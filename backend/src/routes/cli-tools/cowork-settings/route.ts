@@ -314,7 +314,7 @@ export async function POST_handler(req, res) {
   // Cowork disabled: spawns arbitrary processes (RCE risk).
   return res.status(403).json({ error: "Cowork is disabled" });
   try {
-    const { baseUrl, apiKey, models, plugins, localPlugins, customPlugins } = req.body;
+    const { baseUrl, apiKey, models, plugins, localPlugins, customPlugins } = req.body || {};
 
     if (!baseUrl || !apiKey) {
       return res.status(400).json({ error: "baseUrl and apiKey are required" });

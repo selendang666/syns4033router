@@ -67,13 +67,18 @@ export default function CopilotToolCard({ tool, isExpanded, onToggle, baseUrl, a
       const keyToUse = (selectedApiKey && selectedApiKey.trim())
         ? selectedApiKey
         : (!cloudEnabled ? "sk_syns4033router" : selectedApiKey);
-      await fetch("/api/cli-tools/copilot-settings", {
+      const res = await fetch("/api/cli-tools/copilot-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ baseUrl: getEffectiveBaseUrl(), apiKey: keyToUse, models }),
       });
+      // This runs on every model add/remove, not just the Apply button. Swallowing
+      // the response left the edited list on screen while the server kept the old
+      // one, so leaving the card without pressing Apply lost the change silently.
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) setMessage({ type: "error", text: data.error || "Failed to save models" });
     } catch (error) {
-      console.log("Error saving models:", error);
+      setMessage({ type: "error", text: error.message || "Network error" });
     }
   };
 

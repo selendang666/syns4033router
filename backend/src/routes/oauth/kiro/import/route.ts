@@ -8,7 +8,7 @@ import { createProviderConnection } from "../../../../models/index.js";
  */
 export async function POST_handler(req, res) {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.body || {};
 
     if (!refreshToken || typeof refreshToken !== "string") {
       return res.status(400).json(

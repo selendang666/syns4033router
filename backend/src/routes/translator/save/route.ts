@@ -4,7 +4,7 @@ import path from "path";
 
 export async function POST_handler(req, res) {
   try {
-    const { file, content } = req.body;
+    const { file, content } = req.body || {};
 
     if (!file || content === undefined) {
       return res.status(400).json({ success: false, error: "File and content required" });

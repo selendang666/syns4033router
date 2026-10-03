@@ -17,7 +17,7 @@ export async function GET(req, res) {
 // POST /api/models/custom - Add custom model
 export async function POST_handler(req, res) {
   try {
-    const { providerAlias, id, type, name } = req.body;
+    const { providerAlias, id, type, name } = req.body || {};
     if (!providerAlias || !id) {
       return res.status(400).json({ error: "providerAlias and id required" });
     }

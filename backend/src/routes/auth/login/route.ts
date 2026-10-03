@@ -27,7 +27,7 @@ export async function POST_handler(req, res) {
       });
     }
 
-    const { password } = req.body;
+    const { password } = req.body || {};
     const settings = await getSettings();
 
     // Block login via tunnel/tailscale if dashboard access is disabled

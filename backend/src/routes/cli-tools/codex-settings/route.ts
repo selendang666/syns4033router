@@ -109,7 +109,7 @@ export async function GET(req, res) {
 // POST - Update SYNS4033Router settings (merge with existing config)
 export async function POST_handler(req, res) {
   try {
-    const { baseUrl, apiKey, model, subagentModel } = req.body;
+    const { baseUrl, apiKey, model, subagentModel } = req.body || {};
     
     if (!baseUrl || !apiKey || !model) {
       return res.status(400).json({ error: "baseUrl, apiKey and model are required" });

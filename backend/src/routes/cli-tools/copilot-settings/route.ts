@@ -61,7 +61,7 @@ export async function GET(req, res) {
 // POST - Apply SYNS4033Router config to chatLanguageModels.json
 export async function POST_handler(req, res) {
   try {
-    const { baseUrl, apiKey, models } = req.body;
+    const { baseUrl, apiKey, models } = req.body || {};
 
     if (!baseUrl || !models?.length) {
       return res.status(400).json({ error: "baseUrl and models are required" });

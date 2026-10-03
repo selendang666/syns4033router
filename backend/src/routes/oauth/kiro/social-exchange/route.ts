@@ -9,7 +9,7 @@ import { createProviderConnection } from "../../../../models/index.js";
  */
 export async function POST_handler(req, res) {
   try {
-    const { code, codeVerifier, provider } = req.body;
+    const { code, codeVerifier, provider } = req.body || {};
 
     if (!code || !codeVerifier) {
       return res.status(400).json(

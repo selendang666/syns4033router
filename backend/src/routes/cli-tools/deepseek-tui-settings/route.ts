@@ -124,7 +124,7 @@ export async function GET(req, res) {
 
 export async function POST_handler(req, res) {
     try {
-        const { baseUrl, apiKey, model } = req.body;
+        const { baseUrl, apiKey, model } = req.body || {};
         if (!baseUrl || !model) {
             return res.status(400).json({ error: "baseUrl and model are required" });
         }

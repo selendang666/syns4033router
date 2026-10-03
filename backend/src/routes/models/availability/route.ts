@@ -62,7 +62,7 @@ export async function GET(req, res) {
 
 export async function POST_handler(req, res) {
   try {
-    const { action, provider, model } = req.body;
+    const { action, provider, model } = req.body || {};
 
     if (action !== "clearCooldown" || !provider || !model) {
       return res.status(400).json({ error: "Invalid request" });

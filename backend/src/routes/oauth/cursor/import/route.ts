@@ -12,7 +12,7 @@ import { createProviderConnection } from "../../../../models/index.js";
  */
 export async function POST_handler(req, res) {
   try {
-    const { accessToken, machineId } = req.body;
+    const { accessToken, machineId } = req.body || {};
 
     if (!accessToken || typeof accessToken !== "string") {
       return res.status(400).json(

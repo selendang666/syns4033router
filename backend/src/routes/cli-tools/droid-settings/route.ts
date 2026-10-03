@@ -82,7 +82,7 @@ export async function GET(req, res) {
 // Also accepts `activeModel` to set which model is active/primary
 export async function POST_handler(req, res) {
   try {
-    const { baseUrl, apiKey, model, models, activeModel } = req.body;
+    const { baseUrl, apiKey, model, models, activeModel } = req.body || {};
     
     // Accept either `models` (array) or `model` (string, legacy)
     const modelsArray = Array.isArray(models) ? models.slice() : (typeof model === "string" ? [model] : []);

@@ -130,7 +130,7 @@ export async function GET(req, res) {
 
 export async function POST_handler(req, res) {
   try {
-    const { baseUrl, apiKey, models } = req.body;
+    const { baseUrl, apiKey, models } = req.body || {};
 
     if (!baseUrl || !apiKey) {
       return res.status(400).json(

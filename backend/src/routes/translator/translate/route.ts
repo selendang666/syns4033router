@@ -8,7 +8,7 @@ import { getExecutor } from "../../../../open-sse/executors/index.js";
 
 export async function POST_handler(req, res) {
   try {
-    const { step, body } = req.body;
+    const { step, body } = req.body || {};
 
     if (!step || !body) {
       return res.status(400).json({ success: false, error: "Step and body required" });

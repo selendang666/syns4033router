@@ -107,7 +107,7 @@ export async function GET(req, res) {
 // POST - Start MITM server (cert + server, no DNS)
 export async function POST_handler(req, res) {
   try {
-    const { apiKey, sudoPassword, mitmRouterBaseUrl, forceKillPort443 } = req.body;
+    const { apiKey, sudoPassword, mitmRouterBaseUrl, forceKillPort443 } = req.body || {};
     const pwd = getPassword(sudoPassword) || await loadEncryptedPassword() || "";
 
     if (!apiKey || requiresSudoPassword(pwd)) {
@@ -170,7 +170,7 @@ export async function DELETE_handler(req, res) {
 // PATCH - Toggle DNS for a specific tool (enable/disable)
 export async function PATCH_handler(req, res) {
   try {
-    const { tool, action, sudoPassword } = req.body;
+    const { tool, action, sudoPassword } = req.body || {};
     const pwd = getPassword(sudoPassword) || await loadEncryptedPassword() || "";
 
     // `tool` is only meaningful for the DNS actions; trust-cert operates on the

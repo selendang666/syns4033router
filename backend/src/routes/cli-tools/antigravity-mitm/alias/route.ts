@@ -21,7 +21,7 @@ export async function GET_handler(req, res) {
 // PUT - Save MITM aliases for a specific tool
 export async function PUT_handler(req, res) {
   try {
-    const { tool, mappings } = req.body;
+    const { tool, mappings } = req.body || {};
 
     if (!tool || !mappings || typeof mappings !== "object") {
       return res.status(400).json({ error: "tool and mappings required" });

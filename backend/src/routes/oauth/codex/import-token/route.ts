@@ -11,7 +11,7 @@ import { extractCodexAccountInfo } from "../../../../lib/oauth/providers.js";
  */
 export async function POST_handler(req, res) {
   try {
-    const { accessToken, name } = req.body;
+    const { accessToken, name } = req.body || {};
 
     if (!accessToken || typeof accessToken !== "string") {
       return res.status(400).json(

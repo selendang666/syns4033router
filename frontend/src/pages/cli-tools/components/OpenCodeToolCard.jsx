@@ -78,7 +78,7 @@ export default function OpenCodeToolCard({ tool, isExpanded, onToggle, baseUrl, 
         ? selectedApiKey
         : (!cloudEnabled ? "sk_syns4033router" : selectedApiKey);
       const validActiveModel = models.includes(activeModel) ? activeModel : (models[0] || "");
-      await fetch("/api/cli-tools/opencode-settings", {
+      const res = await fetch("/api/cli-tools/opencode-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,8 +89,13 @@ export default function OpenCodeToolCard({ tool, isExpanded, onToggle, baseUrl, 
           subagentModel,
         }),
       });
+      // Same background save as CopilotToolCard: it fires on every model
+      // add/remove, and an unchecked response left the card showing edits the
+      // server never received.
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) setMessage({ type: "error", text: data.error || "Failed to save models" });
     } catch (error) {
-      console.log("Error saving models:", error);
+      setMessage({ type: "error", text: error.message || "Network error" });
     }
   };
 

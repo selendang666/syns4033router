@@ -3,7 +3,7 @@ import { LOCALE_COOKIE, normalizeLocale, isSupportedLocale } from "../../i18n/co
 
 export async function POST_handler(req, res) {
   try {
-    const { locale } = req.body;
+    const { locale } = req.body || {};
     
     if (!locale || !isSupportedLocale(locale)) {
       return res.status(400).json(

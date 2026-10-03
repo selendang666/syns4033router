@@ -84,7 +84,7 @@ export async function GET(req, res) {
 // POST - Apply SYNS4033Router as openai-compatible provider (multi-model support)
 export async function POST_handler(req, res) {
   try {
-    const { baseUrl, apiKey, model, models, activeModel, subagentModel } = req.body;
+    const { baseUrl, apiKey, model, models, activeModel, subagentModel } = req.body || {};
 
     // Accept either `model` (string, legacy) or `models` (array of strings)
     const modelsArray = Array.isArray(models) ? models.slice() : (typeof model === "string" ? [model] : []);
@@ -169,7 +169,7 @@ export async function POST_handler(req, res) {
 // PATCH - Update specific settings (e.g., clear active model)
 export async function PATCH_handler(req, res) {
   try {
-    const { clearActiveModel } = req.body;
+    const { clearActiveModel } = req.body || {};
     const configPath = getConfigPath();
 
     let config = {};

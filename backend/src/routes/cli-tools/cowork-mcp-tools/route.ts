@@ -83,7 +83,7 @@ async function probeMcp(url) {
 
 export async function POST_handler(req, res) {
   try {
-    const { url } = req.body;
+    const { url } = req.body || {};
     if (!url || typeof url !== "string") {
       return res.status(400).json({ error: "url required" });
     }

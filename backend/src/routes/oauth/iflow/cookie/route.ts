@@ -8,7 +8,7 @@ import { createProviderConnection } from "../../../../models/index.js";
  */
 export async function POST_handler(req, res) {
   try {
-    const { cookie } = req.body;
+    const { cookie } = req.body || {};
 
     if (!cookie || typeof cookie !== "string") {
       return res.status(400).json({ error: "Cookie is required" });

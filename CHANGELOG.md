@@ -344,6 +344,35 @@ sama dengan boolean tersimpan sebagai tipe yang salah
 
 ---
 
+### 31 handler yang jatuh 500 kalau request tanpa body
+
+`const { url } = req.body;` melempar kalau body tidak pernah ter-parse,
+dan yang terkirim adalah 500 dengan detail internal:
+
+```
+POST /api/cli-tools/cowork-mcp-tools   tanpa body
+  sebelum → 500  {"error":"Cannot destructure property 'url' of 'req.body' as it is undefined."}
+  sesudah → 400  {"error":"url required"}
+```
+
+Bukan cuma satu route. 31 handler di 30 file, termasuk `auth/login` —
+permintaan login tanpa body membalas 500 beserta keterangan internal,
+bukan penolakan yang bersih. Semua kini memakai `req.body || {}`.
+— `backend/src/routes/**` (30 file) · `[test]`
+
+### CLI Tools: simpanan model diam-diam hilang
+
+`saveModels` di `CopilotToolCard` dan `OpenCodeToolCard` berjalan setiap
+model ditambah atau dihapus, bukan hanya saat tombol Apply ditekan.
+Keduanya membuang respons, jadi daftar model tetap menampilkan hasil
+editwalaupun server menyimpan yang lama. Kalau kartu ditinggalkan tanpa
+menekan Apply, perubahannya hilang tanpa satu pesan pun.
+
+Keduanya kini memeriksa status dan menampilkan errornya.
+`handleApply` di kedua file sudah benar sejak awal — jadi kartu yang sama
+sekali punya handler yang benar dan handler yang diam-diam gagal.
+— `frontend/src/pages/cli-tools/components/{Copilot,OpenCode}ToolCard.jsx` · `[test]`
+
 ### MITM: kegagalan simpan model mapping tidak pernah kelihatan
 
 `saveMappings` di `MitmToolCard` memanggil `PUT .../alias` dan membuang

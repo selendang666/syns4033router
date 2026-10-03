@@ -16,7 +16,7 @@ function getVenvPython() {
 
 export async function POST_handler(req, res) {
   try {
-    const { proxy } = req.body;
+    const { proxy } = req.body || {};
     if (!proxy || typeof proxy !== "string") {
       return res.status(400).json({ ok: false, error: "No proxy provided" });
     }
