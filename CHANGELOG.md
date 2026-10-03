@@ -402,6 +402,32 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Kartu provider tanpa kredensial: "tersimpan" padahal PATCH gagal
+
+`NoAuthProxyCard` (dipakai kartu Edge TTS, Local Device, Google TTS, Coqui)
+mengirim `PATCH /api/settings` lalu membuang responsnya, lalu menyalakan
+indikator "tersimpan". `fetch` hanya menolak pada kegagalan jaringan, jadi
+session kedaluwarsa atau 500 masuk sebagai promise yang berhasil — pilihan
+proxy pool tampak berubah, server menyimpan yang lama, dan baru terlihat
+ketika halaman dibuka lagi.
+
+Respons kini diperiksa, pilihan dikembalikan ke nilai sebelumnya bila gagal,
+dan pesannya ditampilkan. Ini pola yang sama seperti toggle combos, bulk
+quota, `saveModels` MITM, dan `handleHealthCheck` proxy pools.
+— `frontend/src/shared/components/NoAuthProxyCard.jsx` · `[test]`
+
+### Kartu provider tanpa kredensial: "ready to use" adalah klaim yang tidak diuji
+
+Teks di kartu itu berbunyi *"This provider is ready to use."* Edge TTS
+menjawab `502 Bing TTS failed: 401 {"ShowCaptcha":false}` dari server ini —
+layanan itu menolak alamat pusat data. Kalimatnya sekarang berbunyi apa yang
+benar: tidak ada kredensial yang perlu diatur, dan apakah upstream mau
+melayani bergantung pada host ini.
+
+Badge "Ready" di daftar provider sengaja tidak diubah — itu berarti "tidak
+butuh kredensial", yang memang benar. Yang berlebihan adalah kalimatnya.
+— `frontend/src/shared/components/NoAuthProxyCard.jsx` · `[test]`
+
 ### Diketahui: tiga model image Gemini tidak tersedia di akun ini
 
 Menu Image menampilkan tiga model `gemini/*` bertipe `image`, dan

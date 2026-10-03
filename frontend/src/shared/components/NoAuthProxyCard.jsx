@@ -11,6 +11,7 @@ export default function NoAuthProxyCard({ providerId }) {
   const [proxyPools, setProxyPools] = useState([]);
   const [proxyPoolId, setProxyPoolId] = useState(NONE_PROXY_POOL_VALUE);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
 
   useEffect(() => {
@@ -28,11 +29,12 @@ export default function NoAuthProxyCard({ providerId }) {
   }, [providerId]);
 
   const handleChange = async (newValue) => {
+    const previous = proxyPoolId;
     setProxyPoolId(newValue);
     setSaving(true);
     try {
-      const res = await fetch("/api/settings", { cache: "no-store" });
-      const data = res.ok ? await res.json() : {};
+      const readRes = await fetch("/api/settings", { cache: "no-store" });
+      const data = readRes.ok ? await readRes.json() : {};
       const current = data.providerStrategies || {};
       const override = { ...(current[providerId] || {}) };
       if (newValue === NONE_PROXY_POOL_VALUE) delete override.proxyPoolId;
@@ -40,15 +42,27 @@ export default function NoAuthProxyCard({ providerId }) {
       const updated = { ...current };
       if (Object.keys(override).length === 0) delete updated[providerId];
       else updated[providerId] = override;
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ providerStrategies: updated }),
       });
+      // fetch only rejects on network failure, so an expired session or a 500
+      // resolved fine and the row flashed "saved" while the server kept the old
+      // proxy pool. fetchProxyPools on the next visit is what revealed it.
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || "Could not save the proxy pool choice");
+        setProxyPoolId(previous);
+        return;
+      }
+      setSaveError(null);
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
     } catch (e) {
       console.log("Save proxyPoolId error:", e);
+      setSaveError(e.message || "Network error");
+      setProxyPoolId(previous);
     } finally {
       setSaving(false);
     }
@@ -62,7 +76,7 @@ export default function NoAuthProxyCard({ providerId }) {
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium">No authentication required</p>
-          <p className="text-xs text-text-muted">This provider is ready to use. Optionally route requests through a proxy pool to bypass IP-based limits.</p>
+          <p className="text-xs text-text-muted">No credential to configure. Whether the upstream answers from this host is a separate question — some of these services refuse datacenter addresses. Route through a proxy pool if a request fails.</p>
         </div>
         {savedFlash && <Badge variant="success" size="sm">Saved</Badge>}
       </div>
@@ -83,3 +97,6 @@ export default function NoAuthProxyCard({ providerId }) {
 NoAuthProxyCard.propTypes = {
   providerId: PropTypes.string.isRequired,
 };
+        {saveError && (
+          <p className="text-xs text-red-500 break-words">{saveError}</p>
+        )}
