@@ -402,6 +402,53 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Halaman detail provider yang tidak melayani kind: kosong tanpa pesan
+
+`if (!kinds.includes(kind)) return null;` membuat halaman **tanpa isi sama
+sekali** — tanpa judul, tanpa penjelasan, tanpa tombol kembali. Dua kondisi
+berbeda sampai ke sana dan keduanya terlihat sama:
+
+```
+/dashboard/media-providers/video/openai   → kosong   (openai memang tidak punya model video)
+/dashboard/media-providers/video/weavy    → kosong   (weavy sengaja dihapus dari dashboard,
+                                                        tapi katalog masih 75 model)
+```
+
+Halaman `/video/weavy` bahkan tidak punya tombol Run, padahal katalog
+menyimpan 41 model video — weavy-nya dan route-nya masih hidup. Bassi `leonardo`
+dan `runwayml` di lokasi yang sama merender 30 dan 2 model dengan normal.
+
+Sekarang kedua kondisi menampilkan-provider yang memang tidaklayani memakai
+jenis itu— plus penjelasan dan tombol kembali.
+— `frontend/src/pages/media-providers/[kind]/[id]/page.jsx` · `[test]`
+
+### Diketahui: model Weavy tidak pernah dikirim ke Weavy
+
+Adapter Weavy mengirim permintaan yang sama untuk **45 model**
+mereka — video maupun image:
+
+```
+URL     https://api.weavy.ai/api/v1/recipes/SZXXYN7L9PN2SCTVYAlt/duplicate   ← satu template
+header  x-weavy-*, authorization, User-Agent                                      ← tanpa model
+body    {}                                                                        ← kosong
+```
+
+`buildUrl(_model, _creds)` dan `buildBody(_model, _body)` keduanya
+mengabaikan argumen model. Satu-satunya tempat `model` dipakai adalah
+`parseResponse`, yaitu **setelah** permintaan selesai, untuk menulis log dan
+menyusun bentuk respons secara lokal.
+
+Jadi di level API, `weavy-luma-ray-2`, `weavy-kling`, dan
+`weavy-veo-3-1-image-to-video` semuanya menjadi permintaan yang identik.
+
+**Belum diperbaiki dan TIDAK DIVERIFIKASI.** Tidak ada koneksi Weavy di
+production, jadi tidak bisa dipastikan apa yang Weavy lakukan dengan body
+kosong pada template itu — mungkin template itu memang memilih model dari
+sesuatu yang lain, mungkin semua model mengembalikan hasil yang sama. Yang
+terbukti hanyalah bahwa pilihan model tidak ikut terkirim. Menebak perbaikannya
+tanpa bukti berisiko damaging alur yang mungkin memang berjalan.
+— diverifikasi dari `backend/open-sse/handlers/imageProviders/weavy.js` · `[test]`
+
 ### STT Gemini tidak pernah bisa dipakai: nama field yang ditolak Google
 
 Payload audio dikirim dengan nama field snake_case:

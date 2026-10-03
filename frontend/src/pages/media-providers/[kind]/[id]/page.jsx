@@ -1892,7 +1892,28 @@ export default function MediaProviderDetailPage() {
   }
 
   const kinds = isCustom ? ["embedding"] : (provider.serviceKinds ?? ["llm"]);
-  if (!isCustom && !kinds.includes(kind)) return null; // notFound removed
+  if (!isCustom && !kinds.includes(kind)) {
+    // Returning null here rendered a blank page with no way back. Providers
+    // reach this state two ways: a kind they genuinely do not serve (openai has
+    // no video model), and a provider removed from the dashboard while the
+    // catalog still lists it (weavy). Both look identical without a message.
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 px-3 py-16 text-center">
+        <span className="material-symbols-outlined text-[36px] text-text-muted">block</span>
+        <h2 className="text-base font-semibold text-text-main">
+          {provider.name ?? builtInProvider?.name ?? id} does not offer {kindConfig?.label?.toLowerCase() || kind}
+        </h2>
+        <p className="max-w-md text-sm text-text-muted">
+          {Object.keys(builtInProvider || {}).length === 0
+            ? "This provider is no longer listed in the dashboard. The API may still recognise its models."
+            : "Pick a different provider from the sidebar, or check the provider list for one that does."}
+        </p>
+        <Link to={`/dashboard/media-providers/${kind}`} className="mt-2 text-xs text-primary hover:underline">
+          Back to {kindConfig?.label || kind}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
