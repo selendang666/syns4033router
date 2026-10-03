@@ -522,7 +522,7 @@
             <p class="endpoint-desc">
               Generate images or videos. For video models (RunwayML, Leonardo, Weavy video models),
               the response uses the same format but the <code>url</code> fields point to video files.
-              This endpoint handles all image and video generation requests.
+              Video models are accepted here too, but <code>/v1/video/generations</code> is the endpoint <code>/v1/models/info</code> reports for them, and it is the one to prefer for video.
             </p>
             <table class="param-table">
               <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
@@ -595,6 +595,33 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="endpoint-card">
+          <div class="endpoint-header">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/v1/video/generations</span>
+          </div>
+          <div class="endpoint-body">
+            <p class="endpoint-desc">
+              Generate videos. This is the endpoint <code>/v1/models/info</code> reports for models
+              whose <code>kind</code> is <code>video</code> — for example
+              <code>weavy/weavy-kling</code>. It takes the same body as the image endpoint and
+              returns the same OpenAI-compatible shape, with <code>url</code> pointing at video
+              files.
+            </p>
+            <div class="param-table">
+              <div class="param-row"><span class="param-name">model</span><span class="param-type">string</span><span class="param-req">required</span><span class="param-desc">Video model identifier (e.g. <code>weavy/weavy-kling</code>)</span></div>
+              <div class="param-row"><span class="param-name">prompt</span><span class="param-type">string</span><span class="param-req">required</span><span class="param-desc">Text description of the video to generate</span></div>
+              <div class="param-row"><span class="param-name">size</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">Output dimensions or aspect ratio</span></div>
+              <div class="param-row"><span class="param-name">duration</span><span class="param-type">integer</span><span class="param-req">optional</span><span class="param-desc">Clip length in seconds. Options depend on the model</span></div>
+              <div class="param-row"><span class="param-name">image_url</span><span class="param-type">string</span><span class="param-req">optional</span><span class="param-desc">Image to start or end the video from, for models that support it</span></div>
+            </div>
+            <p class="endpoint-desc" style="margin-top:10px">
+              Query <code>GET /v1/models/info?id=weavy/weavy-kling</code> to see which endpoint a
+              given model uses before you call it.
+            </p>
           </div>
         </div>
 
@@ -1033,7 +1060,7 @@ GET /v1/models/info?id=<span class="str">leonardo/leo-sora-2</span></div>
   <span class="key">"id"</span>: <span class="str">"weavy/weavy-kling"</span>,
   <span class="key">"name"</span>: <span class="str">"Kling 3.0"</span>,
   <span class="key">"kind"</span>: <span class="str">"video"</span>,
-  <span class="key">"endpoint"</span>: <span class="str">"/v1/images/generations"</span>,
+  <span class="key">"endpoint"</span>: <span class="str">"/v1/video/generations"</span>,
   <span class="key">"params"</span>: [<span class="str">"size"</span>, <span class="str">"duration"</span>, <span class="str">"resolution"</span>, <span class="str">"aspect_ratio"</span>, <span class="str">"image_url"</span>, <span class="str">"end_image_url"</span>]
 }</div>
       </section>

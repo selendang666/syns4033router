@@ -360,6 +360,31 @@ permintaan login tanpa body membalas 500 beserta keterangan internal,
 bukan penolakan yang bersih. Semua kini memakai `req.body || {}`.
 — `backend/src/routes/**` (30 file) · `[test]`
 
+### Docs: contoh respons `/v1/models/info` salah, endpoint video tidak pernah ditulis
+
+Halaman Docs menampilkan contoh respons untuk `GET /v1/models/info?id=weavy/weavy-kling`
+dengan `"endpoint": "/v1/images/generations"`. API sebenarnya menjawab lain:
+
+```
+GET /v1/models/info?id=weavy/weavy-kling
+  docs    → "kind":"video", "endpoint":"/v1/images/generations"
+  sebenarnya→ "kind":"video", "endpoint":"/v1/video/generations"
+```
+
+`KIND_ENDPOINT` di backend memetakan `video` ke `/v1/video/generations`, dan
+path itu tidak disebut di docs satu kali pun meski halaman BERJUDUL "Image &
+Video API Reference" dan menyebut video 265 kali. `POST /v1/video/generations`
+adalah endpoint publik yang berfungsi dan tidak terdokumentasi.
+
+Selain itu, card `/v1/images/generations` mengklaim "This endpoint handles all
+image and video generation requests" — keduanya memang menerima model video,
+tetapi `/v1/models/info` menunjuk ke endpoint video, jadi itu yang sebaiknya
+dipakai.
+
+Endpoint video kini punya card sendiri dengan parameter yang sama, contoh
+respons model-info dikoreksi, dan klaim pada card image diperjelas.
+— `frontend/public/image-video-docs.html` · `[test]`
+
 ### CLI Tools: simpanan model diam-diam hilang
 
 `saveModels` di `CopilotToolCard` dan `OpenCodeToolCard` berjalan setiap
