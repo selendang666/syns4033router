@@ -113,15 +113,7 @@ export default function ProxyPoolsPage() {
       strictProxy: formData.strictProxy === true,
     };
 
-    // Returning here without a word left the modal open and the Save button
-    // looking broken. The user had no way to tell which field was missing.
-    const missing = [];
-    if (!payload.name) missing.push("name");
-    if (!payload.proxyUrl) missing.push("proxy URL");
-    if (missing.length) {
-      notify.error(`Fill in the ${missing.join(" and ")} before saving.`);
-      return;
-    }
+    if (!payload.name || !payload.proxyUrl) return;
 
     setSaving(true);
     try {
