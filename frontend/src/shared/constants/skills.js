@@ -70,6 +70,7 @@ export const SKILLS = [
   {
     id: "using-superpowers",
     name: "Using Superpowers",
+    agentOnly: true,
     description: "Use when starting any conversation — establishes how to find and use skills before ANY response.",
     endpoint: null,
     icon: "bolt",
@@ -89,4 +90,15 @@ export function getSkillRawUrl(id) {
 
 export function getSkillBlobUrl(id) {
   return `${SKILLS_BLOB_BASE}/${id}/SKILL.md`;
+}
+
+/**
+ * Fetch a skill's raw markdown. Used by the "import as system prompt" flow so
+ * the router — not the agent — ends up holding the text. Nothing here runs on
+ * page load; the fetch only happens when someone asks for it.
+ */
+export async function fetchSkillContent(id) {
+  const res = await fetch(getSkillRawUrl(id), { cache: "no-store" });
+  if (!res.ok) throw new Error(`Could not fetch ${id} (HTTP ${res.status})`);
+  return res.text();
 }

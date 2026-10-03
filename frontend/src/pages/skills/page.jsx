@@ -1,11 +1,13 @@
 
 import { Card, Badge } from "@/shared/components";
+import { useState, useEffect, useCallback } from "react";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import {
   SKILLS,
   SKILLS_REPO_URL,
   getSkillRawUrl,
   getSkillBlobUrl,
+  fetchSkillContent,
 } from "@/shared/constants/skills";
 
 function CopyButton({ value, label = "Copy link" }) {
@@ -24,7 +26,7 @@ function CopyButton({ value, label = "Copy link" }) {
   );
 }
 
-function SkillRow({ skill }) {
+function SkillRow({ skill, onImport, importing, hideImport }) {
   const url = getSkillRawUrl(skill.id);
   return (
     <div
@@ -66,7 +68,21 @@ function SkillRow({ skill }) {
         </a>
       </div>
 
-      <CopyButton value={url} />
+      <div className="flex flex-col gap-1.5 shrink-0">
+        <CopyButton value={url} />
+        <button
+          onClick={() => onImport(skill)}
+          disabled={importing === skill.id || hideImport}
+          style={hideImport ? { display: "none" } : undefined}
+          className="px-2 py-1 rounded-md border border-border-subtle text-[11px] font-medium text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors cursor-pointer shrink-0 inline-flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Fetch this skill's text and save it as a System Prompt entry"
+        >
+          <span className="material-symbols-outlined text-[12px]">
+            {importing === skill.id ? "progress_activity" : "download"}
+          </span>
+          {importing === skill.id ? "Importing" : "Import"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -75,6 +91,73 @@ const API_SKILLS = ["syns4033router-chat", "syns4033router-image", "syns4033rout
 const AGENT_SKILLS = ["using-superpowers", "multi-brain"];
 
 export default function SkillsPage() {
+  const [importing, setImporting] = useState(null);
+  const [existingTargets, setExistingTargets] = useState([]);
+
+  // Which model targets already hold a system prompt, so Import can say what it
+  // is about to collide with instead of failing with a bare 409 later.
+  const loadExisting = useCallback(async () => {
+    try {
+      const res = await fetch("/api/system-prompts");
+      const data = res.ok ? await res.json() : {};
+      const list = data.prompts || data.systemPrompts || [];
+      setExistingTargets(list.map((p) => p.modelTarget));
+    } catch {
+      setExistingTargets([]);
+    }
+  }, []);
+
+  useEffect(() => { loadExisting(); }, [loadExisting]);
+
+  // A skill is documentation for a coding agent: it tells the agent which env
+  // vars and endpoints exist. Sending that text as a system prompt to a chat
+  // model would hand it instructions about tooling it does not have.
+  const handleImport = useCallback(async (skill) => {
+    if (AGENT_SKILLS.includes(skill.id)) return;
+    const target = window.prompt(
+      `Import "${skill.name}" as a system prompt.\n\nModel target — use * for every model:`,
+      "*",
+    );
+    if (target === null) return;
+    const modelTarget = target.trim();
+    if (!modelTarget) return;
+
+    setImporting(skill.id);
+    try {
+      const content = await fetchSkillContent(skill.id);
+      if (existingTargets.includes(modelTarget)) {
+        const overwrite = window.confirm(
+          `A system prompt already exists for "${modelTarget}".\nReplace it with this skill?`,
+        );
+        if (!overwrite) return;
+        const list = (await (await fetch("/api/system-prompts")).json());
+        const rows = list.prompts || list.systemPrompts || [];
+        const hit = rows.find((p) => p.modelTarget === modelTarget);
+        if (hit) {
+          const res = await fetch(`/api/system-prompts/${hit.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: content }),
+          });
+          if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+        }
+      } else {
+        const res = await fetch("/api/system-prompts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ displayName: skill.name, modelTarget, prompt: content }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      }
+      await loadExisting();
+      alert(`"${skill.name}" imported as a system prompt for ${modelTarget}.`);
+    } catch (err) {
+      alert(`Could not import "${skill.name}": ${err.message}`);
+    } finally {
+      setImporting(null);
+    }
+  }, [existingTargets, loadExisting]);
+
   const entrySkill = SKILLS.find((s) => s.isEntry);
   const apiSkills = SKILLS.filter((s) => API_SKILLS.includes(s.id));
   const agentSkills = SKILLS.filter((s) => AGENT_SKILLS.includes(s.id));
@@ -116,7 +199,7 @@ export default function SkillsPage() {
       {entrySkill && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">Entry Point</h2>
-          <SkillRow skill={entrySkill} />
+          <SkillRow skill={entrySkill} onImport={handleImport} importing={importing} />
         </section>
       )}
 
@@ -125,7 +208,7 @@ export default function SkillsPage() {
         <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">API Capabilities</h2>
         <div className="space-y-2">
           {apiSkills.map((skill) => (
-            <SkillRow key={skill.id} skill={skill} />
+            <SkillRow key={skill.id} skill={skill} onImport={handleImport} importing={importing} hideImport={AGENT_SKILLS.includes(skill.id)} />
           ))}
         </div>
       </section>
@@ -135,7 +218,7 @@ export default function SkillsPage() {
         <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">Agent Workflow</h2>
         <div className="space-y-2">
           {agentSkills.map((skill) => (
-            <SkillRow key={skill.id} skill={skill} />
+            <SkillRow key={skill.id} skill={skill} onImport={handleImport} importing={importing} hideImport={AGENT_SKILLS.includes(skill.id)} />
           ))}
         </div>
       </section>

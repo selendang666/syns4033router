@@ -628,6 +628,26 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Skills bisa diimpor jadi System Prompt
+
+Setiap skill punya tombol **Import** yang mengambil teks `SKILL.md` dari GitHub
+dan menyimpannya sebagai entry di `/dashboard/system-prompt`, lengkap dengan
+target model yang lu tentukan. Kalau target itu sudah punya entry, Import
+bertanya lebih dulu alih-alih menimpa diam-diam.
+
+Jadi skills tetap kanal distribusi — operator cukup menempel satu link — tapi
+penegakannya ada di router, bukan bergantung pada agent mau complies atau
+tidak. Ini yang sudah terbukti bekerja: `withPrompt "I'm Kova."` vs
+`baseline "My name is ChatGPT."`.
+
+Tombol Import disembunyikan untuk `using-superpowers` dan `multi-brain`.
+Keduanya instruksi untuk agent yang punya akses shell dan memori antar-agent;
+dikirim sebagai system prompt ke model chat, keduanya menyuruh model memakai
+alat yang tidak ia punya.
+
+— `frontend/src/pages/skills/page.jsx`
+— `frontend/src/shared/constants/skills.js` · `[test]`
+
 ### Tombol Copy menampilkan "Copied!" meski clipboard ditolak
 
 `useCopyToClipboard` memanggil `write()` tanpa `await`, lalu langsung
