@@ -190,18 +190,15 @@ export default function WebProvidersPage() {
       return;
     }
     try {
-      // POST /api/combos answers { combos: [...] }, the whole list, not
-      // { combo: { id } }. Reading created.id gave undefined, so the navigation
-      // would have gone to /combo/undefined even on success.
-      const data = await res.json();
-      const created = Array.isArray(data?.combos) ? data.combos : data?.combo ? [data.combo] : [];
-      const mine = created.find((c) => c?.name === name);
-      if (!mine?.id) {
+      // POST /api/combos answers the combo object itself — { id, name, kind,
+      // models, createdAt }. There is no wrapper.
+      const created = await res.json();
+      if (!created?.id) {
         await fetchAll();
         alert(`"${name}" was created, but the response had no id. Find it in the list.`);
         return;
       }
-      navigate(`/dashboard/media-providers/combo/${mine.id}`);
+      navigate(`/dashboard/media-providers/combo/${created.id}`);
     } catch (e) {
       await fetchAll();
       alert(`"${name}" was created, but the response could not be read (${e.message}).`);

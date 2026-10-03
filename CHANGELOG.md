@@ -418,10 +418,10 @@ jadi combo yang dimaksud mulai kosong lalu diisi di halaman detail — langkah
 pertama itu mustahil. Efeknya konsekuensi dari validasi yang ditambahkan untuk
 halaman `/combos`.
 
-Selain itu, `POST /api/combos` menjawab `{ combos: [...] }` — seluruh daftar,
-bukan `{ combo: { id } }`. Frontend membaca `created.id`, yang tidak pernah ada,
-sehingga navigasi akan menuju `/combo/undefined` walau pembuatan berhasil. Id
-sekarang dicari dari daftar itu berdasarkan nama yang baru dibuat.
+Selain itu sempat saya sempat mengira `POST /api/combos` menjawab `{ combos: [...] }` dan
+mengubah frontend agar membaca id dari sana. Itu salah: responsnya adalah objek
+combo itu sendiri, `{ id, name, kind, models, createdAt }`, jadi `created.id`
+sudah benar sejak awal. Perubahan itu sudah dikembalikan.
 — `frontend/src/pages/media-providers/web/page.jsx` · `[test]`
 
 ### Web: dua provider fetch-only tidak pernah muncul
