@@ -634,6 +634,15 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to export database");
       }
 
+      // The dump has to carry the real API keys or a restore would come back
+      // empty, so this file is worth protecting. Say so before it is written to
+      // disk rather than after.
+      const proceed = window.confirm(
+        "The backup contains every API key in plain text, plus the stored password hash.\n\n" +
+        "Anyone who opens the file has your keys. Continue?",
+      );
+      if (!proceed) return;
+
       const payload = await res.json();
       const content = JSON.stringify(payload, null, 2);
       const blob = new Blob([content], { type: "application/json" });

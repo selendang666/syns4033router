@@ -648,6 +648,26 @@ jalurnya masih ada di setiap deploy baru. `newPassword` kini ditolak dengan
 
 — `backend/src/routes/settings/route.ts` · `[test]`
 
+### Backup database tidak diberi peringatan dan tidak dilindungi dari cache
+
+`GET /api/settings/database` mengembalikan seluruh isi DB, termasuk **nilai API
+key dalam teks biasa**:
+
+```
+settings.password    hash bcrypt, 60 karakter
+apiKeys              3 entri — USER-1, MULTI, MULTI2 — nilai key utuh
+```
+
+Itu memang perlu agar restore-nya lengkap;backup tanpa key akan kembali
+kosong. Yang bermasalah adalah dua hal di sekitarnya: tidak ada
+`Cache-Control`, jadi respons yang memegang kredensial hidup boleh di-cache
+perantara; dan UI mengunduh file itu tanpa peringatan apa pun.
+
+Kini `no-store` + `Pragma: no-cache`, dan tombol Export meminta konfirmasi
+yang menyebutkan bahwa file berisi seluruh API key dan hash password.
+— `backend/src/routes/settings/database/route.ts`
+— `frontend/src/pages/profile/page.jsx` · `[test]`
+
 ### Enam kredensial lain ikut keluar utuh di setiap `GET /api/settings`
 
 Hanya `password` dan `oidcClientSecret` yang pernah dibuang dari respons.

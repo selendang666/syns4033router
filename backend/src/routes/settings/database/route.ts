@@ -5,6 +5,11 @@ import { applyOutboundProxyEnv } from "../../../lib/network/outboundProxy.js";
 export async function GET(req, res) {
   try {
     const payload = await exportDb();
+    // The dump carries every API key in plain text — that is what makes a
+    // restore complete — and the bcrypt password hash. Nothing that holds a
+    // credential should be left to an intermediary cache.
+    res.set("Cache-Control", "no-store");
+    res.set("Pragma", "no-cache");
     return res.json(payload);
   } catch (error) {
     console.log("Error exporting database:", error);
