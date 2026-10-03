@@ -38,7 +38,14 @@ export default function ConsoleLogClient() {
     es.onopen = () => setConnected(true);
 
     es.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
+      // A throw inside an EventSource handler does not surface anywhere useful:
+      // the stream keeps running but nothing else on this page ever updates.
+      let msg;
+      try {
+        msg = JSON.parse(e.data);
+      } catch {
+        return;
+      }
       if (msg.type === "init") {
         setLogs(msg.logs.slice(-CONSOLE_LOG_CONFIG.maxLines));
       } else if (msg.type === "line") {
@@ -65,7 +72,21 @@ export default function ConsoleLogClient() {
   return (
     <div className="">
       <Card>
-        <div className="flex items-center justify-end px-4 pt-3 pb-2">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          {/* The stream can drop while the page keeps looking normal. Without
+              this the view simply stops updating and nothing says so. */}
+          <span
+            className={`inline-flex items-center gap-1.5 text-[11px] ${
+              connected ? "text-green-500" : "text-red-500"
+            }`}
+            title={connected ? "Streaming live" : "Stream closed — reconnecting"}
+          >
+            <span
+              className={`size-1.5 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
+              aria-hidden="true"
+            />
+            {connected ? "Live" : "Disconnected"}
+          </span>
           <Button size="sm" variant="outline" icon="delete" onClick={handleClear}>
             Clear
           </Button>

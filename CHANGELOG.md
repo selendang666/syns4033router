@@ -628,6 +628,21 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Console Log: halaman terlihat hidup padahal stream sudah putus
+
+`connected` dilacak dari `onopen` dan `onerror`, tapi tidak pernah dirender.
+Kalau SSE terputus, panel log tetap tampil seperti biasa dan **berhenti
+memperbarui tanpa satu tanda pun** — operator tidak bisa membedakan
+"tidak ada log baru" dari "koneksi sudah mati".
+
+Ditambah penanda Live / Disconnected di header card.
+
+Selain itu `JSON.parse(e.data)` di dalam handler EventSource tidak
+dilindungi. Lempar di dalam handler EventSource tidak muncul di mana pun
+yang berguna: stream tetap jalan tapi tidak ada apa pun di halaman ini yang
+berubah lagi.
+— `frontend/src/pages/console-log/ConsoleLogClient.jsx` · `[test]`
+
 ### Skills bisa diimpor jadi System Prompt
 
 Setiap skill punya tombol **Import** yang mengambil teks `SKILL.md` dari GitHub
