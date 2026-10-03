@@ -1,4 +1,5 @@
 
+import { validateProxyUrl, VALID_PROXY_TYPES } from "../../../lib/proxyPoolValidation.js";
 import {
   deleteProxyPool,
   getProviderConnections,
@@ -19,8 +20,9 @@ function normalizeProxyPoolUpdate(body = {}) {
 
   if (Object.prototype.hasOwnProperty.call(body, "proxyUrl")) {
     const proxyUrl = typeof body?.proxyUrl === "string" ? body.proxyUrl.trim() : "";
-    if (!proxyUrl) {
-      return { error: "Proxy URL is required" };
+    const check = validateProxyUrl(proxyUrl, updates.type || "http");
+    if (check.error) {
+      return { error: check.error };
     }
     updates.proxyUrl = proxyUrl;
   }
@@ -38,8 +40,9 @@ function normalizeProxyPoolUpdate(body = {}) {
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "type")) {
-    const validTypes = ["http", "vercel", "cloudflare"];
-    updates.type = validTypes.includes(body?.type) ? body.type : "http";
+    // The list here was ["http", "vercel", "cloudflare"] while the create path
+    // accepted "deno" too, so PUT { type: "deno" } silently became "http".
+    updates.type = VALID_PROXY_TYPES.includes(body?.type) ? body.type : "http";
   }
 
   return { updates };

@@ -389,6 +389,42 @@ ditempatkan di bawah blok curl-nya.
 — `frontend/src/pages/media-providers/[kind]/[id]/page.jsx`
 — `frontend/src/pages/media-providers/combo/[id]/page.jsx` · `[test]`
 
+### Proxy Pools: proxyUrl tanpa validasi sama sekali
+
+`normalizeProxyPoolInput` hanya memeriksa string-nya kosong atau tidak.
+Apapun yang lain langsung disimpan sebagai pool proxy yang supposedly
+bekerja:
+
+```
+POST /api/proxy-pools  {"name":"audit","proxyUrl":"bukan-url"}
+  sebelum → 201 Created
+  sesudah → 400  Proxy URL must be a valid URL, e.g. http://host:port …
+```
+
+`javascript:alert(1)`, `ftp://x.y`, dan `example.com:8080` juga diterima.
+Sekarang URL harus punya scheme yang sesuai dan host yang ada.
+— `backend/src/lib/proxyPoolValidation.js` (baru) · `[test]`
+
+### Proxy Pools: PUT tidak memvalidasi, dan `type: "deno"` hilang diam-diam
+
+`PUT /api/proxy-pools/:id` punya `normalizeProxyPoolUpdate` sendiri, yang
+memeriksa `proxyUrl` hanya apakah kosong. Jadi dua handler yang menulis
+kolom yang sama tidak sepakat: POST menolak, PUT menerima.
+
+```
+PUT {"proxyUrl":"ngawur"}   → 200   (sekarang 400)
+```
+
+Handler itu juga punya daftar tipe sendiri, `["http","vercel","cloudflare"]`,
+tanpa `"deno"` yang dipakai jalur create. `PUT {"type":"deno"}` tidak
+ditolak — ia diturunkan diam-diam jadi `"http"`, jadi pool Deno yang
+dideploy kehilangan tipenya saat diedit.
+
+Kedua handler kini memakai `validateProxyUrl` dan `VALID_PROXY_TYPES` yang
+sama.
+— `backend/src/routes/proxy-pools/route.ts`
+— `backend/src/routes/proxy-pools/[id]/route.ts` · `[test]`
+
 ### Media Providers: `/dashboard/media-providers` melempar operator ke halaman login
 
 Path polos tidak punya route sama sekali. Yang terdaftar hanya
