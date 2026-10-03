@@ -418,8 +418,13 @@ Halaman `/video/weavy` bahkan tidak punya tombol Run, padahal katalog
 menyimpan 41 model video — weavy-nya dan route-nya masih hidup. Bassi `leonardo`
 dan `runwayml` di lokasi yang sama merender 30 dan 2 model dengan normal.
 
-Sekarang kedua kondisi menampilkan-provider yang memang tidaklayani memakai
-jenis itu— plus penjelasan dan tombol kembali.
+Sekarang kedua kondisi menampilkan provider yang memang tidak melayani
+jenis itu, dengan penjelasan dan tombol kembali.
+
+Dua `return null` lain di berkas yang sama ikut menutupi
+`/video/weavy`: `kindConfig` yang tidak dikenal, dan `builtInProvider` yang
+`undefined` karena weavy dihapus dari `AI_PROVIDERS` di v0.6.0 sementara 75
+modelnya masih ada di katalog. Keduanya kini menampilkan pesan juga.
 — `frontend/src/pages/media-providers/[kind]/[id]/page.jsx` · `[test]`
 
 ### Diketahui: model Weavy tidak pernah dikirim ke Weavy

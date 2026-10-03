@@ -1876,16 +1876,41 @@ export default function MediaProviderDetailPage() {
     return () => { cancelled = true; };
   }, [id, isCustom]);
 
-  if (!kindConfig) return null; // notFound removed
-
   const builtInProvider = AI_PROVIDERS[id];
+
+  // A kind that does not exist at all, and a provider that is not in the
+  // dashboard, both used to return null and render a completely blank page.
+  // /video/weavy hit the second one: weavy was dropped from AI_PROVIDERS in
+  // v0.6.0 while its 75 models stayed in the catalog.
+  const kindMissingPage = (title, body) => (
+    <div className="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 px-3 py-16 text-center">
+      <span className="material-symbols-outlined text-[36px] text-text-muted">block</span>
+      <h2 className="text-base font-semibold text-text-main">{title}</h2>
+      <p className="max-w-md text-sm text-text-muted">{body}</p>
+      <Link to={`/dashboard/media-providers/${kind}`} className="mt-2 text-xs text-primary hover:underline">
+        Back to {kindConfig?.label || kind}
+      </Link>
+    </div>
+  );
+
+  if (!kindConfig) {
+    return kindMissingPage(
+      `Unknown media kind "${kind}"`,
+      "That page does not exist. Pick a kind from the sidebar.",
+    );
+  }
 
   // For custom embedding nodes, build a synthetic provider object
   const provider = isCustom
     ? (customNode ? { id, name: customNode.name || "Custom Embedding", color: "#6366F1", textIcon: "CE" } : null)
     : builtInProvider;
 
-  if (!isCustom && !builtInProvider) return null; // notFound removed
+  if (!isCustom && !builtInProvider) {
+    return kindMissingPage(
+      `${id} is not in the dashboard`,
+      "This provider was removed from the dashboard. Its models may still be listed by the API, but there is nothing to configure here.",
+    );
+  }
   if (isCustom && !customLoading && !customNode) return null; // notFound removed
   if (isCustom && customLoading) {
     return <div className="text-text-muted text-sm py-12 text-center">Loading...</div>;
