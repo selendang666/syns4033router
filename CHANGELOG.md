@@ -402,6 +402,45 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Diketahui: tiga model image Gemini tidak tersedia di akun ini
+
+Menu Image menampilkan tiga model `gemini/*` bertipe `image`, dan
+`/v1/models/info` melaporkan `kind=image → /v1/images/generations` untuk
+ketiganya. Melewati endpoint itu semuanya gagal.
+
+```
+POST /api/v1/images/generations  model=gemini/<3 model>
+  → 404  This model models/gemini-2.5-flash is no longer available
+```
+
+Tiga dari tiga. Rangkaian pemeriksaannya:
+
+```
+gemini/gemini-3.1-flash-lite-preview   → 200   akun dan kunci berfungsi
+gemini/gemini-3-flash-preview          → 404  -this model is no longer available
+gemini/gemini-2.5-flash-image          → 404
+gemini/gemini-3-pro-image-preview      → 404
+gemini/gemini-3.1-flash-image-preview  → 404
+```
+
+`buildUrl()` dipanggil langsung dan menghasilkan URL yang berbentuk benar
+(`…/v1beta/models/gemini-2.5-flash-image:generateContent`), jadi konstruksi URL
+bukan penyebabnya. Koneksi gemini di production juga menyimpan `lastError`
+yang sama, artinya akunnya memang tidak lagi melayani model-model ini.
+
+Jadi katalog kita menyebut model yang sudah tidak ada di sisi Google untuk
+akun ini. Model Gemini yang masih hidup pada akun ini (`gemini-3.1-flash-lite-preview`)
+adalah model bahasa, bukan gambar.
+
+**Belum diperbaiki, dan tidak bisa diperbaiki dari sini.** Katalog model
+Google yang berlaku untuk sebuah kunci API tidak diketahui tanpa
+menghubungi API itu langsung, dan mengarang daftar model akan
+membuat katalog lebih salah lagi, bukan lebih benar. Yang perlu dilakukan
+pemilik: jalankan `GET https://generativelanguage.googleapis.com/v1beta/models`
+dengan kunci Gemini-nya, lalu cocokkan dengan daftar di katalog.
+— diverifikasi di `syns4033router-production.up.railway.app` · `[test]`
+
+
 ### Custom Embedding: baseUrl tanpa validasi, `javascript:` diterima
 
 Menambah node embedding custom hanya memeriksa `name` dan `prefix`, lalu
