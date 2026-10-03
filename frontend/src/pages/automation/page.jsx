@@ -1600,11 +1600,19 @@ function AmmailTab() {
     e.stopPropagation();
     if (!confirm("Delete this email?")) return;
     try {
-      await fetch(`/api/automation/ammail/otps/${id}`, {
+      const res = await fetch(`/api/automation/ammail/otps/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete" })
       });
+      // fetch only rejects on network failure, so an expired session or a 500
+      // resolved fine. The row then disappeared from the list as if it had been
+      // deleted, and came back on the next refresh.
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert((data && data.error) || `Could not delete that email (HTTP ${res.status}).`);
+        return;
+      }
       if (selectedOtpId === id) {
         setSelectedOtpId(null);
         setSelectedOtpDetails(null);
@@ -1612,13 +1620,14 @@ function AmmailTab() {
       loadState();
     } catch (e) {
       console.error(e);
+      alert("Could not delete that email.");
     }
   };
 
   const handleEmptyFolder = async () => {
     if (!confirm(`Delete all emails in folder ${activeFolder}?`)) return;
     try {
-      await fetch("/api/automation/ammail", {
+      const res = await fetch("/api/automation/ammail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1627,6 +1636,11 @@ function AmmailTab() {
           address: selectedInboxAddress
         })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert((data && data.error) || `Could not empty the folder (HTTP ${res.status}).`);
+        return;
+      }
       setSelectedOtpId(null);
       setSelectedOtpDetails(null);
       loadState();
