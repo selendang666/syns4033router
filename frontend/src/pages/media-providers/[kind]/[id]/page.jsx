@@ -284,13 +284,27 @@ function EmbeddingExampleCard({ providerId, customAlias }) {
 
         {/* API Key */}
         <Row label="API Key">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-..."
-            className="w-full px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:border-primary font-mono"
-          />
+          <div className="w-full flex items-center gap-2">
+            <input
+              type="password"
+              value={revealKey ? apiKey : ""}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={maskKey(apiKey) || "sk-..."}
+              className="w-full px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:border-primary font-mono"
+            />
+            {/* type="password" hides the glyphs but the value attribute still
+                carries the whole key, so innerHTML exposed it. The field starts
+                empty and shows the masked form as its placeholder instead. */}
+            <button
+              type="button"
+              onClick={() => setRevealKey((v) => !v)}
+              className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded text-xs text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
+              title={revealKey ? "Hide the API key" : "Fill in the current API key"}
+            >
+              <span className="material-symbols-outlined text-[14px]">{revealKey ? "visibility_off" : "visibility"}</span>
+              {revealKey ? "Hide" : "Fill"}
+            </button>
+          </div>
         </Row>
 
         {/* Input */}

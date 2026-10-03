@@ -376,6 +376,12 @@ detail. Ini satu-satunya file di seluruh frontend yang masking sekaligus
 menaruh key mentah; halaman lain menampilkan penuh apa adanya atau masking
 konsisten.
 
+Kartu embedding berbeda lagi: field-nya `<input type="password">` dengan
+`value={apiKey}`. Input password menutup glifnya, tapi atribut `value` tetap
+memuat seluruh key — `innerHTML` tetap membocorkannya. Field itu kini mulai
+kosong dan menampilkan bentuk tersamar sebagai placeholder, dengan tombol
+Fill untuk experimented.
+
 Blok curl sekarang ikut memakai `maskKey()` dan ada tombol Reveal di
 sebelah baris API Key, jadi masking-nya benar-benar melindungi sampai
 diminta. `combo/[id]` tidak punya baris API Key sama sekali, jadi tombolnya
