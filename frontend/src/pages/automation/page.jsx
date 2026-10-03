@@ -489,11 +489,16 @@ function CodeBuddyTab() {
     const deleteFromsyns4033router = confirm("Also delete this account connection from SYNS4033Router?");
     const deletedAcc = accounts.find(a => a.id === id);
     try {
-      await fetch(`/api/automation/codebuddy/${id}`, {
+      const res = await fetch(`/api/automation/codebuddy/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", deleteFromsyns4033router })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert((data && data.error) || `Could not delete the account (HTTP ${res.status}).`);
+        return;
+      }
       if (deletedAcc) {
         clearedEmails.current.add(deletedAcc.email.toLowerCase());
         setJobLogs(prev => prev.filter(log => log.email.toLowerCase() !== deletedAcc.email.toLowerCase()));
@@ -819,12 +824,23 @@ function CodeBuddyTab() {
                     setJobLogs([]);
                     setActiveJob(null);
                     try {
-                      await fetch("/api/automation/codebuddy", {
+                      const res = await fetch("/api/automation/codebuddy", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ action: "clear-logs" })
                       });
-                    } catch (e) { /* silent */ }
+                      // The logs were already cleared from the screen before this
+                      // request, so a failure has to be said out loud or the
+                      // operator assumes the server kept them gone.
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => null);
+                        alert((data && data.error) || `Logs were cleared on screen but not on the server (HTTP ${res.status}).`);
+                        loadState();
+                      }
+                    } catch (e) {
+                      alert("Logs were cleared on screen but the request to the server failed.");
+                      loadState();
+                    }
                   }}>
                     Clear
                   </Button>
@@ -1264,7 +1280,7 @@ function CodeBuddyTab() {
                     setProxyModalOpen(false);
                     // Auto-save to DB immediately
                     try {
-                      await fetch("/api/automation/codebuddy", {
+                      const res = await fetch("/api/automation/codebuddy", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -1273,7 +1289,15 @@ function CodeBuddyTab() {
                           proxy_pool: JSON.stringify(lines),
                         }),
                       });
-                    } catch {}
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => null);
+                        alert((data && data.error) || `Could not save the proxy list (HTTP ${res.status}).`);
+                        return;
+                      }
+                      alert("Proxy list saved.");
+                    } catch {
+                      alert("Could not save the proxy list.");
+                    }
                   }}
                   className="px-4 py-2 text-xs rounded-lg bg-primary text-white font-medium hover:opacity-90 transition-opacity"
                 >

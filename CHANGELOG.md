@@ -639,7 +639,19 @@ dimuat ulang.
 `handleEmptyFolder` lebih tajam: ia mengosongkan semua email di sebuah folder
 tanpa umpan balik apa pun.
 
-Keduanya kini memeriksa status dan menyebutkan kegagalannya.
+Tiga handler lain di halaman yang sama punya bentuk serupa dan ikut diperbaiki:
+
+```
+handleSingleDelete  hapus akun CodeBuddy  → UI membersihkan log seolah berhasil
+Clear logs         catch (e) { /* silent */ }
+Save Proxies       catch {}             → daftar proxy dianggap tersimpan
+```
+
+"Clear logs"先把 log dihapus dari layar **sebelum** permintaan dikirim, jadi
+kegagalan harus disebut. "Save Proxies" menutup
+modal lebih dulu lalu menyimpan diam-diam.
+
+Kelimanya kini memeriksa status dan menyebutkan kegagalannya.
 — `frontend/src/pages/automation/page.jsx` · `[test]`
 
 ### Proxy Pools: proxyUrl tanpa validasi sama sekali
