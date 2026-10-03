@@ -389,6 +389,19 @@ ditempatkan di bawah blok curl-nya.
 — `frontend/src/pages/media-providers/[kind]/[id]/page.jsx`
 — `frontend/src/pages/media-providers/combo/[id]/page.jsx` · `[test]`
 
+### Proxy Pools: "Disabled N dead proxies" disampaikan walau tidak ada yang tersimpan
+
+Health check menguji pool, lalu menawarkan mematikan yang mati. Penanganannya
+memakai `catch {}` yang kosong di sekitar `PUT isActive: false`. `fetch` hanya
+menolak pada kegagalan jaringan, jadi session kedaluwarsa atau 500 masuk
+sebagai promise yang berhasil dan hilang tanpa suara. Tidak ada yang menghitung
+—what pun jumlah yang dilaporkan berasal dari `deadIds.length`, bukan dari
+apa yang benar-benar disimpan.
+
+Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
+gagal dilaporkan sendiri alih-alih "success".
+— `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
+
 ### Proxy Pools: proxyUrl tanpa validasi sama sekali
 
 `normalizeProxyPoolInput` hanya memeriksa string-nya kosong atau tidak.

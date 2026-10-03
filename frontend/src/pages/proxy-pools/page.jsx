@@ -305,17 +305,36 @@ export default function ProxyPoolsPage() {
           setConfirmState(null);
           setBulkBusy(true);
           try {
+            let disabled = 0;
+            const failedIds = [];
             for (const id of deadIds) {
               try {
-                await fetch(`/api/proxy-pools/${id}`, {
+                const res = await fetch(`/api/proxy-pools/${id}`, {
                   method: "PUT",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ isActive: false }),
                 });
-              } catch {}
+                // fetch only rejects on network failure, so an expired session or
+                // a 500 resolved fine and vanished into the empty catch — the
+                // operator was told N proxies were disabled while the server kept
+                // every one of them active.
+                if (res.ok) {
+                  disabled += 1;
+                } else {
+                  failedIds.push(id);
+                }
+              } catch {
+                failedIds.push(id);
+              }
             }
             await fetchProxyPools();
-            notify.success(`Disabled ${deadIds.length} dead proxies`);
+            if (failedIds.length) {
+              notify.error(
+                `Disabled ${disabled} of ${deadIds.length} dead proxies — ${failedIds.length} failed to save`,
+              );
+            } else {
+              notify.success(`Disabled ${disabled} dead proxies`);
+            }
           } finally {
             setBulkBusy(false);
           }
