@@ -94,8 +94,11 @@ export async function handleChatCore({ body, modelInfo, requestedModel, credenti
   // through this same handler, which would otherwise re-inject the entry it is
   // supposed to be contrasting against. An internal header is the only signal
   // that reaches here from that route.
-  const skipSystemPrompt =
-    request?.headers?.get?.("x-skip-system-prompt") === "1";
+  const skipHeader =
+    clientRawRequest?.headers?.get?.("x-skip-system-prompt") ??
+    clientRawRequest?.headers?.["x-skip-system-prompt"] ??
+    clientRawRequest?.headers?.["X-Skip-System-Prompt"];
+  const skipSystemPrompt = skipHeader === "1" || skipHeader === 1 || skipHeader === true;
 
   const jbKeys = [
     // What the caller typed — the panel's key, verbatim.

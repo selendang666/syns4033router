@@ -645,7 +645,10 @@ Jadi label "BASELINE (TANPA PROMPT)" berbohong dan perbandingan itu secara
 struktur tidak bisa memisahkan efek prompt — dua-duanya akan selalu sama.
 
 `chatCore` sekarang menghormati header internal `x-skip-system-prompt`, dan
-kaki baseline mengirimnya.
+kaki baseline mengirimnya. Versi pertama memakai nama variabel yang salah di
+`chatCore` dan membuat route ini menjawab `request is not defined`; nama
+yang benar adalah `clientRawRequest`, dan keduanya bentuk header — `.get()`
+dan akses properti — kini ditangani.
 — `backend/open-sse/handlers/chatCore.js`
 — `backend/src/routes/system-prompts/try/route.ts` · `[test]`
 
