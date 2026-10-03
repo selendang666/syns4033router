@@ -628,6 +628,27 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Playground: baseline "TANPA PROMPT" sebenarnya memakai prompt
+
+Playground mengirim dua kaki: satu dengan prompt, satu dengan
+`systemPrompt: null`. Tapi kedua kaki melewati handler chat yang sama, dan
+handler itu mengambil prompt tersimpan dari database **tanpa syarat** —
+`getSystemPromptForModel(key)` lalu `injectJailbreak`. Kaki baseline
+disuntik ulang entry yang seharusnya ia bandingkan.
+
+```
+POST /api/system-prompts/try  {"model":"oc/space-bunny-free","compare":true}
+  {"compared":true, "withPrompt":null, "baseline":{"ok":true,"output":"I'm Kova."}}
+```
+
+Jadi label "BASELINE (TANPA PROMPT)" berbohong dan perbandingan itu secara
+struktur tidak bisa memisahkan efek prompt — dua-duanya akan selalu sama.
+
+`chatCore` sekarang menghormati header internal `x-skip-system-prompt`, dan
+kaki baseline mengirimnya.
+— `backend/open-sse/handlers/chatCore.js`
+— `backend/src/routes/system-prompts/try/route.ts` · `[test]`
+
 ### System Prompt: "✓ Dihapus" tanpa memeriksa server
 
 `handleDelete` mengirim `DELETE` lalu langsung `showToast("✓ Dihapus")` dan

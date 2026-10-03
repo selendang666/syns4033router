@@ -40,14 +40,14 @@ async function ensureInitialized() {
 const MAX_MESSAGE = 8000;
 const MAX_PROMPT = 32000;
 
-function toWebRequest(req, body) {
-  const url = `${req.protocol}://${req.get("host")}/v1/chat/completions`;
-  return new Request(url, {
-    method: "POST",
-    headers: new Headers({ "content-type": "application/json" }),
-    body: JSON.stringify(body),
-  });
-}
+  function toWebRequest(req, body, extraHeaders = {}) {
+    const url = `${req.protocol}://${req.get("host")}/v1/chat/completions`;
+    return new Request(url, {
+      method: "POST",
+      headers: new Headers({ "content-type": "application/json", ...extraHeaders }),
+      body: JSON.stringify(body),
+    });
+  }
 
 /** Run one leg and normalise whatever shape comes back into plain text. */
 async function runLeg(req, { model, message, systemPrompt }) {
@@ -55,8 +55,12 @@ async function runLeg(req, { model, message, systemPrompt }) {
     ? injectJailbreak({ messages: [{ role: "user", content: message }] }, systemPrompt).messages
     : [{ role: "user", content: message }];
 
+  // Without this header the handler re-injects the very entry this leg is
+  // meant to be contrasted against, and the baseline comes back identical to
+  // the prompted one — the comparison then proves nothing.
+  const headers = systemPrompt ? {} : { "x-skip-system-prompt": "1" };
   const response = await handleChat(
-    toWebRequest(req, { model, messages, stream: false, max_tokens: 512 }),
+    toWebRequest(req, { model, messages, stream: false, max_tokens: 512 }, headers),
     null,
     { authAlreadyChecked: true },
   );

@@ -89,6 +89,14 @@ export async function handleChatCore({ body, modelInfo, requestedModel, credenti
   // So try both spellings, resolved first, then alias, then the bare model.
   const providerAlias = aliasForProviderId(provider);
 
+  // The system-prompt Playground needs one leg to run WITHOUT the saved prompt,
+  // so the comparison can actually show what the prompt changes. That leg goes
+  // through this same handler, which would otherwise re-inject the entry it is
+  // supposed to be contrasting against. An internal header is the only signal
+  // that reaches here from that route.
+  const skipSystemPrompt =
+    request?.headers?.get?.("x-skip-system-prompt") === "1";
+
   const jbKeys = [
     // What the caller typed — the panel's key, verbatim.
     requestedModel || "",
@@ -96,24 +104,27 @@ export async function handleChatCore({ body, modelInfo, requestedModel, credenti
     providerAlias && model ? `${providerAlias}/${model}` : "",
     model || "",
   ].filter(Boolean);
+    if (!skipSystemPrompt) {
   const jbParts = [];
-  try {
-    const { getSystemPromptForModel, GLOBAL_TARGET } = await import("../../src/lib/db/index.js");
-    for (const key of jbKeys) {
-      const sp = await getSystemPromptForModel(key);
-      if (sp?.prompt) { jbParts.push(sp.prompt); break; }
+    try {
+      const { getSystemPromptForModel, GLOBAL_TARGET } = await import("../../src/lib/db/index.js");
+      for (const key of jbKeys) {
+        const sp = await getSystemPromptForModel(key);
+        if (sp?.prompt) { jbParts.push(sp.prompt); break; }
+      }
+      // Global wildcard, but only when no per-model entry already covered it.
+      if (jbParts.length === 0) {
+        const g = await getSystemPromptForModel(GLOBAL_TARGET);
+        if (g?.prompt) jbParts.push(g.prompt);
+      }
+    } catch (e) {
+      // DB unavailable (fresh checkout / missing native driver) — degrade to env.
     }
-    // Global wildcard, but only when no per-model entry already covered it.
     if (jbParts.length === 0) {
-      const g = await getSystemPromptForModel(GLOBAL_TARGET);
-      if (g?.prompt) jbParts.push(g.prompt);
+      const envPrompt = process.env.GODMODE_JB || "";
+      if (envPrompt) jbParts.push(envPrompt);
     }
-  } catch (e) {
-    // DB unavailable (fresh checkout / missing native driver) — degrade to env.
-  }
-  if (jbParts.length === 0) {
-    const envPrompt = process.env.GODMODE_JB || "";
-    if (envPrompt) jbParts.push(envPrompt);
+  
   }
   if (jbParts.length > 0) {
     const jbPrompt = jbParts.join("\n\n");
