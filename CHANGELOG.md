@@ -628,6 +628,27 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Tombol Copy menampilkan "Copied!" meski clipboard ditolak
+
+`useCopyToClipboard` memanggil `write()` tanpa `await`, lalu langsung
+`setCopied(id)`. Jadi centang hijau muncul **sebelum** penulisan selesai —
+dan muncul juga ketika penulisan itu ditolak.
+
+```
+copy()  →  write()        // tanpa await, penolakan tidak tertangkap
+         setCopied(id)    // "Copied!" muncul apa pun hasilnya
+```
+
+Izin clipboard ditolak, konteks tidak aman, atau kebijakan browser →
+tombol tetap mengonfirmasi, lalu paste berikutnya diam-diam membawa isi
+clipboard yang lama.
+
+Hook ini dipakai di **16 file** — semua tombol Copy di aplikasi: Skills,
+blok curl Playground, hasil media, cli-tools, proxy pools.
+
+`setCopied` kini hanya dipanggil setelah `write()` benar-benar selesai.
+— `frontend/src/shared/hooks/useCopyToClipboard.js` · `[test]`
+
 ### Playground: baseline "TANPA PROMPT" sebenarnya memakai prompt
 
 Playground mengirim dua kaki: satu dengan prompt, satu dengan

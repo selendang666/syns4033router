@@ -25,8 +25,16 @@ export function useCopyToClipboard(resetDelay = 2000) {
         document.body.removeChild(textarea);
       }
     };
-    write();
-    setCopied(id);
+    // Fire-and-forget: the button flipped to "Copied!" immediately, before the
+    // write had finished — and also when the write rejected. A denied clipboard
+    // permission or a non-secure context therefore produced a green checkmark
+    // over nothing, and the paste that followed silently carried whatever was on
+    // the clipboard before.
+    write()
+      .then(() => setCopied(id))
+      .catch((err) => {
+        console.warn("[copy] clipboard write failed:", err?.message || err);
+      });
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
