@@ -628,6 +628,20 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Automation: dua aksi hapus selalu melaporkan berhasil
+
+`handleDeleteOtp` dan `handleEmptyFolder` mengirim permintaan lalu memperbarui
+tampilan seolah berhasil. `fetch` hanya menolak pada kegagalan jaringan, jadi
+session kedaluwarsa atau 500 masuk sebagai promise yang berhasil — baris email,
+atau seluruh isi folder, hilang dari daftar lalu muncul lagi saat halaman
+dimuat ulang.
+
+`handleEmptyFolder` lebih tajam: ia mengosongkan semua email di sebuah folder
+tanpa umpan balik apa pun.
+
+Keduanya kini memeriksa status dan menyebutkan kegagalannya.
+— `frontend/src/pages/automation/page.jsx` · `[test]`
+
 ### Proxy Pools: proxyUrl tanpa validasi sama sekali
 
 `normalizeProxyPoolInput` hanya memeriksa string-nya kosong atau tidak.
