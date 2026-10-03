@@ -628,6 +628,20 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Proxy Pools: Save dengan form kosong tidak memberi tanda
+
+`if (!payload.name || !payload.proxyUrl) return;` menutup modal sebelum
+permintaan apa pun dikirim, tanpa pesan. Tombol Save terlihat rusak dan
+operator tidak bisa tahu field mana yang kurang:
+
+```
+Add Proxy Pool → kosongkan → Save
+  sebelum → tidak terjadi apa-apa, tanpa teks
+  sesudah → "Fill in the name and proxy URL before saving."
+```
+
+— `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
+
 ### Proxy Pools: proxyUrl tanpa validasi sama sekali
 
 `normalizeProxyPoolInput` hanya memeriksa string-nya kosong atau tidak.
