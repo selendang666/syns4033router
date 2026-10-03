@@ -28,6 +28,29 @@ export async function GET(req, res) {
   }
 }
 
+// Base URLs are dialled at request time, so they have to be real http(s)
+// endpoints. Every node type below only ever fetched an http(s) URL, but
+// nothing checked: "bukan-url" and "javascript:alert(1)" were both saved as
+// working endpoints with a 201.
+function validateEndpointUrl(raw, label) {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value) return { error: `${label} is required` };
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return { error: `${label} must be a valid URL, e.g. http://host:port or https://host/path` };
+  }
+  const scheme = parsed.protocol.replace(":", "");
+  if (scheme !== "http" && scheme !== "https") {
+    return { error: `${label} must use http or https (got "${scheme}")` };
+  }
+  if (!parsed.hostname) {
+    return { error: `${label} must include a host` };
+  }
+  return {};
+}
+
 // POST /api/provider-nodes - Create provider node
 export async function POST_handler(req, res) {
   try {
@@ -49,6 +72,11 @@ export async function POST_handler(req, res) {
       if (!apiType || !["chat", "responses"].includes(apiType)) {
         return res.status(400).json({ error: "Invalid OpenAI compatible API type" });
       }
+      const compatibleUrl = baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl;
+      const compatibleCheck = validateEndpointUrl(compatibleUrl, "Base URL");
+      if (compatibleCheck.error) {
+        return res.status(400).json({ error: compatibleCheck.error });
+      }
 
       const node = await createProviderNode({
         id: `${OPENAI_COMPATIBLE_PREFIX}${apiType}-${generateId()}`,
@@ -62,8 +90,13 @@ export async function POST_handler(req, res) {
     }
 
     if (nodeType === "custom-embedding") {
+      const embeddingUrl = baseUrl || CUSTOM_EMBEDDING_DEFAULTS.baseUrl;
+      const embeddingCheck = validateEndpointUrl(embeddingUrl, "Embedding base URL");
+      if (embeddingCheck.error) {
+        return res.status(400).json({ error: embeddingCheck.error });
+      }
       // Strip trailing slash and /embeddings if user pasted full endpoint
-      let sanitizedBaseUrl = (baseUrl || CUSTOM_EMBEDDING_DEFAULTS.baseUrl).trim().replace(/\/$/, "");
+      let sanitizedBaseUrl = embeddingUrl.trim().replace(/\/$/, "");
       if (sanitizedBaseUrl.endsWith("/embeddings")) {
         sanitizedBaseUrl = sanitizedBaseUrl.slice(0, -"/embeddings".length);
       }

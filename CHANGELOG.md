@@ -402,6 +402,24 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Custom Embedding: baseUrl tanpa validasi, `javascript:` diterima
+
+Menambah node embedding custom hanya memeriksa `name` dan `prefix`, lalu
+menyimpan `baseUrl` apa adanya. Semua tipe node hanya pernah mengambil URL
+http(s), tapi tidak ada yang memeriksa — semuanya dijawab `201` dan tersimpan
+sebagai endpoint yang dianggap jalan:
+
+```
+POST /api/provider-nodes  {"type":"custom-embedding","baseUrl":"bukan-url"}
+  sebelum → 201 Created
+  sesudah → 400  Embedding base URL must be a valid URL, e.g. http://host:port …
+```
+
+`javascript:alert(1)` juga diterima. Cabang `custom-embedding` dan
+`openai-compatible` kini memvalidasi skema dan host. Ini bug yang sama seperti
+`proxyUrl` di Proxy Pools, ditemukan lewat cara yang sama.
+— `backend/src/routes/provider-nodes/route.ts` · `[test]`
+
 ### Proxy Pools: proxyUrl tanpa validasi sama sekali
 
 `normalizeProxyPoolInput` hanya memeriksa string-nya kosong atau tidak.
