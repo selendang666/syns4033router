@@ -107,8 +107,8 @@ export async function handleChatCore({ body, modelInfo, requestedModel, credenti
     providerAlias && model ? `${providerAlias}/${model}` : "",
     model || "",
   ].filter(Boolean);
-    if (!skipSystemPrompt) {
-  const jbParts = [];
+    const jbParts = [];
+  if (!skipSystemPrompt) {
     try {
       const { getSystemPromptForModel, GLOBAL_TARGET } = await import("../../src/lib/db/index.js");
       for (const key of jbKeys) {
