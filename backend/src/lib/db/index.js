@@ -111,6 +111,44 @@ export async function importDb(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Invalid database payload");
   }
+
+  // This function wipes every table before it writes anything back. An empty or
+  // half-shaped file therefore does not fail — it succeeds, and leaves the
+  // router with no keys, no providers, no settings and no combos. Everything is
+  // checked here first, before the first DELETE.
+  const KNOWN_COLLECTIONS = [
+    "settings",
+    "providerConnections",
+    "providerNodes",
+    "proxyPools",
+    "apiKeys",
+    "combos",
+    "modelAliases",
+    "customModels",
+    "mitmAlias",
+    "pricing",
+  ];
+  const present = KNOWN_COLLECTIONS.filter((k) => payload[k] !== undefined);
+  if (present.length === 0) {
+    throw new Error(
+      `This file does not look like a SYNS4033Router backup — none of ${KNOWN_COLLECTIONS.join(", ")} are present. Nothing was changed.`,
+    );
+  }
+  for (const key of present) {
+    if (key === "settings") continue;
+    if (!Array.isArray(payload[key])) {
+      throw new Error(`Backup field "${key}" must be a list. Nothing was changed.`);
+    }
+    for (const [i, row] of payload[key].entries()) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) {
+        throw new Error(`Backup field "${key}" has a bad entry at index ${i}. Nothing was changed.`);
+      }
+    }
+  }
+  if (payload.settings !== undefined && (typeof payload.settings !== "object" || Array.isArray(payload.settings))) {
+    throw new Error(`Backup field "settings" must be an object. Nothing was changed.`);
+  }
+
   const db = await getAdapter();
 
   await db.transaction(async () => {

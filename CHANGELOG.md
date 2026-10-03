@@ -648,6 +648,26 @@ jalurnya masih ada di setiap deploy baru. `newPassword` kini ditolak dengan
 
 — `backend/src/routes/settings/route.ts` · `[test]`
 
+### Import database menghapus semua tabel sebelum memvalidasi apa pun
+
+`importDb` membuka transaksi lalu `DELETE` seluruh tabel — settings,
+providerConnections, providerNodes, proxyPools, apiKeys, combos, kv — dan
+baru mengisi ulang dari payload. Tidak ada validasi bentuk.
+
+File yang kosong atau salah bentuk bukan **gagal**: ia **berhasil**, dan
+router tertinggal tanpa key, provider, settings, maupun combo.
+
+```
+POST /api/settings/database  {}
+  → 200   seluruh tabel kosong
+```
+
+Semua pemeriksaan sekarang berjalan sebelum `DELETE` pertama: minimal satu
+dari sepuluh kunci yang dikenal harus ada, tiap koleksi harus berupa list,
+dan tiap isinya harus objek. Pesan error menyebutkan bahwa tidak ada yang
+berubah.
+— `backend/src/lib/db/index.js` · `[test]`
+
 ### Backup database tidak diberi peringatan dan tidak dilindungi dari cache
 
 `GET /api/settings/database` mengembalikan seluruh isi DB, termasuk **nilai API
