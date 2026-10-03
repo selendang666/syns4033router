@@ -88,8 +88,8 @@ export default function SystemPromptPage() {
         setShowCreateModal(false);
         await fetchData();
       } else {
-        const err = await res.json();
-        showToast(`⚠ ${err.error || "Gagal simpan"}`);
+        const err = await res.json().catch(() => null);
+        showToast(`⚠ ${(err && err.error) || `Gagal simpan (HTTP ${res.status})`}`);
       }
     } catch (err) {
       console.error(err);
@@ -111,7 +111,15 @@ export default function SystemPromptPage() {
 
   const handleDelete = async () => {
     try {
-      await fetch(`/api/system-prompts/${confirmDelete.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/system-prompts/${confirmDelete.id}`, { method: "DELETE" });
+      // fetch only rejects on network failure, so an expired session or a 500
+      // resolved fine — the toast said "✓ Dihapus", the row disappeared, and the
+      // entry was still on the server.
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        showToast(`⚠ ${(err && err.error) || `Gagal hapus (HTTP ${res.status})`}`);
+        return;
+      }
       showToast("✓ Dihapus");
       setConfirmDelete(null);
       await fetchData();

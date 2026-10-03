@@ -628,6 +628,19 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### System Prompt: "✓ Dihapus" tanpa memeriksa server
+
+`handleDelete` mengirim `DELETE` lalu langsung `showToast("✓ Dihapus")` dan
+menutup dialog. `fetch` hanya menolak pada kegagalan jaringan, jadi session
+kedaluwarsa atau 500 masuk sebagai promise yang berhasil — toast mengonfirmasi
+penghapusan, barisnya hilang dari layar, dan entri masih ada di server sampai
+halaman dimuat ulang.
+
+`handleSave` sudah memeriksa status, tapi `await res.json()`-nya tidak
+dilindungi: body HTML dari gateway akan melempar sebelum pesan bisa tampil.
+Keduanya kini menoleransi body yang bukan JSON dan menyebut kode status.
+— `frontend/src/pages/system-prompt/page.jsx` · `[test]`
+
 ### Automation: dua aksi hapus selalu melaporkan berhasil
 
 `handleDeleteOtp` dan `handleEmptyFolder` mengirim permintaan lalu memperbarui
@@ -647,7 +660,7 @@ Clear logs         catch (e) { /* silent */ }
 Save Proxies       catch {}             → daftar proxy dianggap tersimpan
 ```
 
-"Clear logs"先把 log dihapus dari layar **sebelum** permintaan dikirim, jadi
+"Clear logs" menghapus log dari layar **sebelum** permintaan dikirim, jadi
 kegagalan harus disebut. "Save Proxies" menutup
 modal lebih dulu lalu menyimpan diam-diam.
 
