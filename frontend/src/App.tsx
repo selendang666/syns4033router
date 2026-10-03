@@ -85,7 +85,10 @@ export default function App() {
             <Route path="skills"          element={<Skills />} />
             <Route path="system-prompt"   element={<SystemPrompt />} />
             <Route path="console-log"     element={<ConsoleLog />} />
-            <Route path="media-providers/web" element={<MediaProviders />} />
+            {/* Bare /media-providers had no route at all and fell through to the
+            catch-all, which bounced a signed-in operator back to /login. */}
+        <Route path="media-providers" element={<Navigate to="/dashboard/media-providers/web" replace />} />
+        <Route path="media-providers/web" element={<MediaProviders />} />
             <Route path="media-providers/:kind" element={<MediaProviderKind />} />
             <Route path="media-providers/:kind/:id" element={<MediaProviderKindId />} />
             <Route path="media-providers/combo/:id" element={<MediaProviderComboDetail />} />

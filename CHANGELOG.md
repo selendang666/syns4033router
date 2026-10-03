@@ -360,6 +360,39 @@ permintaan login tanpa body membalas 500 beserta keterangan internal,
 bukan penolakan yang bersih. Semua kini memakai `req.body || {}`.
 — `backend/src/routes/**` (30 file) · `[test]`
 
+### Media Providers: `/dashboard/media-providers` melempar operator ke halaman login
+
+Path polos tidak punya route sama sekali. Yang terdaftar hanya
+`media-providers/web`, `:kind`, `:kind/:id`, dan `combo/:id`, sehingga path
+polos jatuh ke route `*` yang mengarahkan ke `/`:
+
+```
+/dashboard/media-providers    → /login
+/dashboard/media-providers/   → /login
+```
+
+Operator yang sudah login kehilangan sesi dan dikick balik ke form hanya
+karena mengikuti satu link. Route polos sekarang mengarahkan ke
+`media-providers/web`, sama seperti entri gabungan di sidebar.
+— `frontend/src/App.tsx` · `[test]`
+
+### Media Providers: kind tak dikenal merender halaman mati
+
+Halaman `[kind]` mengarahkan `webSearch` dan `webFetch` ke `/web`, tapi
+tidak ada yang menutup id yang memang tidak pernah ada — salah ketik,
+bookmark lama, atau tautan dari build sebelumnya. Halaman tetap dirender
+dengan judul dari input dan isi kosong:
+
+```
+/dashboard/media-providers/BOGUS-KIND
+  → "Manage your BOGUS-KIND providers"   tanpa daftar, tanpa kembali
+```
+
+Di sana `kindConfig` bernilai undefined dan daftar provider kosong — bukan
+pesan yang jujur. Semua kind yang tidak dikenal kini diarahkan ke `/web`,
+sekaligus menutup kasus yang memang sudah ditangani di dalam file itu.
+— `frontend/src/pages/media-providers/[kind]/page.jsx` · `[test]`
+
 ### Docs: contoh model yang tidak ada
 
 Teks parameter `model` memberi contoh `leo-sora-2`, dan satu link menuju

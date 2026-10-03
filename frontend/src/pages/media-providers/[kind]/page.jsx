@@ -144,14 +144,18 @@ export default function MediaProviderKindPage() {
   const [combos, setCombos] = useState([]);
   const [showAddCustomEmbedding, setShowAddCustomEmbedding] = useState(false);
 
-  // webSearch/webFetch listing pages are merged into /web
-  useEffect(() => {
-    if (kind === "webSearch" || kind === "webFetch") {
-      navigate("/dashboard/media-providers/web");
-    }
-  }, [kind, navigate]);
-
   const kindConfig = MEDIA_PROVIDER_KINDS.find((k) => k.id === kind);
+
+  // Anything that is not a known kind is a typo, a stale bookmark or a link from
+  // an older build. /media-providers/webSearch and /webFetch were merged into
+  // /web, and those redirects already existed — but nothing covered an id that
+  // never existed at all, so it rendered a page titled after the nonsense with
+  // an empty body and no way back. Send every unknown kind to the same place.
+  useEffect(() => {
+    if (!kindConfig) {
+      navigate("/dashboard/media-providers/web", { replace: true });
+    }
+  }, [kindConfig, navigate]);
   const isEmbedding = kind === "embedding";
   const supportsCombo = COMBO_KINDS.has(kind);
 
