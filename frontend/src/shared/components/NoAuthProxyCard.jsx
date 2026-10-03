@@ -90,13 +90,13 @@ export default function NoAuthProxyCard({ providerId }) {
           ...proxyPools.map((pool) => ({ value: pool.id, label: pool.name })),
         ]}
       />
-    </Card>
+            {saveError && (
+          <p className="text-xs text-red-500 break-words mt-2">{saveError}</p>
+        )}
+      </Card>
   );
 }
 
 NoAuthProxyCard.propTypes = {
   providerId: PropTypes.string.isRequired,
 };
-        {saveError && (
-          <p className="text-xs text-red-500 break-words">{saveError}</p>
-        )}
