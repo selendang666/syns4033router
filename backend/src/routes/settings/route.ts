@@ -33,8 +33,9 @@ export async function GET(req, res) {
     for (const key of SECRET_SETTING_KEYS) {
       if (!(key in safeSettings)) continue;
       const value = safeSettings[key];
-      safeSettings[`${key.replace(/([A-Z])/g, "_$1").toLowerCase()}Configured`] =
-        !!value && String(value).length > 0;
+      // camelCase, matching the existing oidcConfigured / passwordConfigured
+      const camel = key.replace(/_([a-z0-9])/g, (_, ch) => ch.toUpperCase());
+      safeSettings[`${camel}Configured`] = !!value && String(value).length > 0;
       delete safeSettings[key];
     }
     
