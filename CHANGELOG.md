@@ -402,6 +402,39 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Web: dua provider fetch-only tidak pernah muncul
+
+Sidebar menamai halamannya "Web Fetch & Search", tapi halamannya hanya memanggil
+`getProvidersByKind("webSearch")`. Dua provider yang hanya mendukung fetch
+tidak pernah tampil:
+
+```
+webSearch : gemini, xai, kimi, minimax, openai, perplexity, tavily, brave-search, …  (15)
+webFetch  : tavily, exa, firecrawl, jina-reader                                     (4)
+hanya fetch → hilang: firecrawl, jina-reader
+```
+
+Keduanya ada di katalog dan punya `serviceKinds: ["webFetch"]`, tapi tidak ada
+jalur untuk只看 daftar itu. Halaman sekarang mengambil kedua daftar dan
+menggabungkannya tanpa duplikat.
+— `frontend/src/pages/media-providers/web/page.jsx` · `[test]`
+
+### Web: kegagalan membuat combo tidak pernah memberi tahu
+
+```
+const err = await res.json();
+alert(err.error || "Failed to create combo");
+```
+
+Body 500 dari error yang belum tertangani, atau halaman HTML dari gateway,
+bukan JSON — `res.json()` lalu melempar, penolakan-nya lepas tanpa tertangani,
+dan operator tidak melihat apa pun. Tombolnya seperti macet.
+
+Sekarang body dibaca dengan `.catch(() => null)` dan pesannya menyebut kode
+status; kalau combo sempat dibuat tapi responsnya tidak terbaca, operator diberi
+tahu dengan kata-kata yang berbeda.
+— `frontend/src/pages/media-providers/web/page.jsx` · `[test]`
+
 ### Halaman detail provider yang tidak melayani kind: kosong tanpa pesan
 
 `if (!kinds.includes(kind)) return null;` membuat halaman **tanpa isi sama

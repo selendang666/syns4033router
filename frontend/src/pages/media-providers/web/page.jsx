@@ -161,7 +161,7 @@ export default function WebProvidersPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchAll(); }, []);
 
-  const searchProviders = getProvidersByKind("webSearch");
+  const searchProviders = getProvidersByKind("webSearch").concat(getProvidersByKind("webFetch").filter((p) => !getProvidersByKind("webSearch").some((q) => q.id === p.id)));
   const fetchProviders = getProvidersByKind("webFetch");
   const searchCombos = combos.filter((c) => c.kind === "webSearch");
   const fetchCombos = combos.filter((c) => c.kind === "webFetch");
@@ -178,12 +178,23 @@ export default function WebProvidersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, models: [], kind }),
     });
-    if (res.ok) {
+    if (!res.ok) {
+      // A 500 from an unhandled error, or a gateway HTML page, is not JSON.
+      // res.json() then throws, the rejection escapes unhandled, and the
+      // operator gets no message at all — the click simply does nothing.
+      const err = await res.json().catch(() => null);
+      alert((err && err.error) || `Failed to create combo (HTTP ${res.status})`);
+      return;
+    }
+    try {
       const created = await res.json();
+      if (!created?.id) {
+        alert("Combo was created but the response had no id — open it from the list.");
+        return;
+      }
       navigate(`/dashboard/media-providers/combo/${created.id}`);
-    } else {
-      const err = await res.json();
-      alert(err.error || "Failed to create combo");
+    } catch (e) {
+      alert(`Combo created, but the response could not be read (${e.message}).`);
     }
   };
 
