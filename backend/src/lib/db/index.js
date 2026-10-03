@@ -116,26 +116,35 @@ export async function importDb(payload) {
   // half-shaped file therefore does not fail — it succeeds, and leaves the
   // router with no keys, no providers, no settings and no combos. Everything is
   // checked here first, before the first DELETE.
-  const KNOWN_COLLECTIONS = [
-    "settings",
+  // exportDb writes four of these as objects and six as lists, so the check has
+  // to know which is which — requiring a list for modelAliases rejected a
+  // perfectly good backup of this very router.
+  const ARRAY_COLLECTIONS = [
     "providerConnections",
     "providerNodes",
     "proxyPools",
     "apiKeys",
     "combos",
-    "modelAliases",
     "customModels",
-    "mitmAlias",
-    "pricing",
   ];
-  const present = KNOWN_COLLECTIONS.filter((k) => payload[k] !== undefined);
+  const OBJECT_COLLECTIONS = ["settings", "modelAliases", "mitmAlias", "pricing"];
+  const present = [...ARRAY_COLLECTIONS, ...OBJECT_COLLECTIONS].filter(
+    (k) => payload[k] !== undefined,
+  );
   if (present.length === 0) {
     throw new Error(
-      `This file does not look like a SYNS4033Router backup — none of ${KNOWN_COLLECTIONS.join(", ")} are present. Nothing was changed.`,
+      `This file does not look like a SYNS4033Router backup — none of ${
+        [...ARRAY_COLLECTIONS, ...OBJECT_COLLECTIONS].join(", ")
+      } are present. Nothing was changed.`,
     );
   }
   for (const key of present) {
-    if (key === "settings") continue;
+    if (OBJECT_COLLECTIONS.includes(key)) {
+      if (typeof payload[key] !== "object" || Array.isArray(payload[key])) {
+        throw new Error(`Backup field "${key}" must be an object. Nothing was changed.`);
+      }
+      continue;
+    }
     if (!Array.isArray(payload[key])) {
       throw new Error(`Backup field "${key}" must be a list. Nothing was changed.`);
     }
@@ -144,9 +153,6 @@ export async function importDb(payload) {
         throw new Error(`Backup field "${key}" has a bad entry at index ${i}. Nothing was changed.`);
       }
     }
-  }
-  if (payload.settings !== undefined && (typeof payload.settings !== "object" || Array.isArray(payload.settings))) {
-    throw new Error(`Backup field "settings" must be an object. Nothing was changed.`);
   }
 
   const db = await getAdapter();
