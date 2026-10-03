@@ -402,6 +402,33 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Diketahui: keempat model STT Gemini tidak bisa dipakai
+
+Menu STT menampilkan empat model `gemini/*` bertipe `stt`. Semuanya gagal,
+dan diuji dengan WAV sungguhan (1 detik, 16 kHz, sine 440 Hz):
+
+```
+gemini/gemini-2.5-pro        → 404  This model models/gemini-2.5-pro is no longer available
+gemini/gemini-2.0-flash      → 404  This model models/gemini-2.5-pro is no longer available
+gemini/gemini-2.5-flash      → 400  Request contains an invalid argument
+gemini/gemini-2.5-flash-lite → 400  Request contains an invalid argument
+```
+
+Dua sudah ditarik Google, dua hidup tapi menolak berkasnya. Yang kedua
+menyebut `models/gemini-2.5-pro` padahal yang diminta `gemini-2.0-flash` —
+dicek bukan ulangan router: entri katalognya polos
+(`{"id":"gemini-2.0-flash","type":"stt"}`) dan tidak ada alias maupun rewrite
+model di jalur ini. Pesan itu datang dari Google.
+
+Dua yang menjawab `invalid argument` masih hidup, jadi penyebabnya belum
+terbatas pada model yang ditarik — kemungkinan format audio yang diterima
+Google lebih sempit dari WAV, tapi itu perlu diuji langsung ke API Google
+untuk dipastikan dan tidak bisa dipastikan dari sini.
+
+Validasi STT-nya sendiri lengkap dan benar — sepuluh kasus diuji, termasuk
+tanpa file, file bukan audio, dan lima `response_format`.
+— diverifikasi di `syns4033router-production.up.railway.app` · `[test]`
+
 ### Kartu provider tanpa kredensial: "tersimpan" padahal PATCH gagal
 
 `NoAuthProxyCard` (dipakai kartu Edge TTS, Local Device, Google TTS, Coqui)
