@@ -16,6 +16,27 @@ export async function GET(req, res) {
     const settings = await getSettings();
     const { password, oidcClientSecret, ...safeSettings } = settings;
     safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+
+    // The password and the OIDC secret were the only two that were ever removed.
+    // Every other credential in the settings row — proxy password, webhook
+    // secret, Cloudflare tokens, the Telegram bot token — came back in plain text
+    // to anyone holding a dashboard session, on every GET. They are dropped and
+    // replaced with a boolean so the UI can still show what is configured.
+    const SECRET_SETTING_KEYS = [
+      "codebuddy_proxy_password",
+      "ammail_webhook_secret",
+      "ammail_cf_api_token",
+      "ammail_cf_telegram_bot_token",
+      "codebuddy_2captcha_api_key",
+      "ammail_api_key",
+    ];
+    for (const key of SECRET_SETTING_KEYS) {
+      if (!(key in safeSettings)) continue;
+      const value = safeSettings[key];
+      safeSettings[`${key.replace(/([A-Z])/g, "_$1").toLowerCase()}Configured`] =
+        !!value && String(value).length > 0;
+      delete safeSettings[key];
+    }
     
     // Env wins only when actually set. Reading these straight from env
     // discarded the stored value, so toggling either switch in the UI wrote to
@@ -102,8 +123,15 @@ export async function PATCH_handler(req, res) {
           return res.status(401).json({ error: "Invalid current password" });
         }
       } else {
-        // The request is already authenticated; no old password exists yet.
-        delete body.currentPassword;
+        // Nothing is stored yet, so there is no current password to compare
+        // against. "Already authenticated" was not enough: on a fresh deploy the
+        // only thing protecting the dashboard is INITIAL_PASSWORD, and this let
+        // any live session install a password of its own without ever naming it.
+        // Set the secret in the environment instead.
+        return res.status(409).json({
+          error:
+            "No dashboard password is stored yet. Set INITIAL_PASSWORD in the environment and restart, then sign in with it.",
+        });
       }
 
       const salt = await bcrypt.genSalt(10);
@@ -112,9 +140,23 @@ export async function PATCH_handler(req, res) {
       delete body.currentPassword;
     }
 
-    if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
-      if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
-        delete body.oidcClientSecret;
+    // A secret that arrives empty is almost always the form echoing back a field
+    // it could not read, not a request to erase the stored value. GET no longer
+    // returns these, so without this the first save of any unrelated setting on
+    // the profile page would wipe them.
+    const SECRET_WRITE_KEYS = [
+      "oidcClientSecret",
+      "codebuddy_proxy_password",
+      "ammail_webhook_secret",
+      "ammail_cf_api_token",
+      "ammail_cf_telegram_bot_token",
+      "codebuddy_2captcha_api_key",
+      "ammail_api_key",
+    ];
+    for (const key of SECRET_WRITE_KEYS) {
+      if (!Object.prototype.hasOwnProperty.call(body, key)) continue;
+      if (!body[key] || !String(body[key]).trim()) {
+        delete body[key];
       }
     }
 

@@ -628,6 +628,43 @@ pertama, dan keduanya terbukti masih menerima `javascript:alert(1)` dengan
 — `backend/src/routes/provider-nodes/route.ts`
 — `backend/src/routes/provider-nodes/[id]/route.ts` · `[test]`
 
+### Password bisa dipasang tanpa password lama saat belum ada yang tersimpan
+
+`PATCH /api/settings` memverifikasi `currentPassword` **hanya kalau** sudah
+ada hash di database:
+
+```js
+if (currentHash) { /* wajib kirim currentPassword */ }
+else { delete body.currentPassword; }   // ← "sudah terautentikasi, jadi cukup"
+```
+
+Di deploy yang dilindungi `INITIAL_PASSWORD`, `currentHash` kosong selama
+password belum pernah diganti lewat dashboard. Selama itu, sesi mana pun
+bisa memasang password baru **tanpa** menyebut `INITIAL_PASSWORD` sama sekali.
+
+Kondisinya sekarang sudah tertutup karena password-nya tersimpan, tapi
+jalurnya masih ada di setiap deploy baru. `newPassword` kini ditolak dengan
+409 dan diarahkan ke `INITIAL_PASSWORD`.
+
+— `backend/src/routes/settings/route.ts` · `[test]`
+
+### Enam kredensial lain ikut keluar utuh di setiap `GET /api/settings`
+
+Hanya `password` dan `oidcClientSecret` yang pernah dibuang dari respons.
+`codebuddy_proxy_password`, `ammail_webhook_secret`, `ammail_cf_api_token`,
+`ammail_cf_telegram_bot_token`, `codebuddy_2captcha_api_key` dan
+`ammail_api_key` dikirim sebagai teks biasa ke siapa pun yang memegang sesi
+dashboard.
+
+Semuanya kini dibuang dan diganti flag `<key>Configured`, supaya UI masih
+tahu apa yang terisi tanpa nilai bocor.
+
+Karena GET tidak lagi mengirimnya, form profile akan memuat field kosong —
+dan tanpa perlindungan tambahan, menyimpan pengaturan lain apa pun akan
+**menimpa secret yang tersimpan dengan string kosong**. Tujuh kunci rahasia
+karena itu tidak lagi ditimpa kalau datang kosong.
+— `backend/src/routes/settings/route.ts` · `[test]`
+
 ### Console Log: halaman terlihat hidup padahal stream sudah putus
 
 `connected` dilacak dari `onopen` dan `onerror`, tapi tidak pernah dirender.
