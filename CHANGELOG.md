@@ -402,6 +402,28 @@ Kini response diperiksa, hanya yang tersimpan yang dihitung, dan bila ada yang
 gagal dilaporkan sendiri alih-alih "success".
 — `frontend/src/pages/proxy-pools/page.jsx` · `[test]`
 
+### Web: tombol Create Combo tidak pernah bisa dipakai
+
+Halaman web mengirim `models: []`, dan API menolaknya:
+
+```
+POST /api/combos  {"name":"x","models":[],"kind":"webSearch"}
+  → 400  Add at least one model to the combo
+POST /api/combos  {"name":"x","kind":"webSearch"}
+  → 201
+```
+
+`validateComboModels` menerima `models` yang tidak ada tapi menolak yang kosong,
+jadi combo yang dimaksud mulai kosong lalu diisi di halaman detail — langkah
+pertama itu mustahil. Efeknya konsekuensi dari validasi yang ditambahkan untuk
+halaman `/combos`.
+
+Selain itu, `POST /api/combos` menjawab `{ combos: [...] }` — seluruh daftar,
+bukan `{ combo: { id } }`. Frontend membaca `created.id`, yang tidak pernah ada,
+sehingga navigasi akan menuju `/combo/undefined` walau pembuatan berhasil. Id
+sekarang dicari dari daftar itu berdasarkan nama yang baru dibuat.
+— `frontend/src/pages/media-providers/web/page.jsx` · `[test]`
+
 ### Web: dua provider fetch-only tidak pernah muncul
 
 Sidebar menamai halamannya "Web Fetch & Search", tapi halamannya hanya memanggil
@@ -415,7 +437,7 @@ hanya fetch → hilang: firecrawl, jina-reader
 ```
 
 Keduanya ada di katalog dan punya `serviceKinds: ["webFetch"]`, tapi tidak ada
-jalur untuk只看 daftar itu. Halaman sekarang mengambil kedua daftar dan
+jalur untuk daftar itu. Halaman sekarang mengambil kedua daftar dan
 menggabungkannya tanpa duplikat.
 — `frontend/src/pages/media-providers/web/page.jsx` · `[test]`
 

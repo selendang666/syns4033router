@@ -173,10 +173,13 @@ export default function WebProvidersPage() {
     let i = 1;
     const existing = new Set(combos.map((c) => c.name));
     while (existing.has(name)) { name = `${base}-${i++}`; }
+    // models: [] is rejected by the API ("Add at least one model"), so this
+    // button could never create anything. The combo is meant to start empty and
+    // be filled on the detail page, and an omitted models field is accepted.
     const res = await fetch("/api/combos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, models: [], kind }),
+      body: JSON.stringify({ name, kind }),
     });
     if (!res.ok) {
       // A 500 from an unhandled error, or a gateway HTML page, is not JSON.
@@ -187,14 +190,21 @@ export default function WebProvidersPage() {
       return;
     }
     try {
-      const created = await res.json();
-      if (!created?.id) {
-        alert("Combo was created but the response had no id — open it from the list.");
+      // POST /api/combos answers { combos: [...] }, the whole list, not
+      // { combo: { id } }. Reading created.id gave undefined, so the navigation
+      // would have gone to /combo/undefined even on success.
+      const data = await res.json();
+      const created = Array.isArray(data?.combos) ? data.combos : data?.combo ? [data.combo] : [];
+      const mine = created.find((c) => c?.name === name);
+      if (!mine?.id) {
+        await fetchAll();
+        alert(`"${name}" was created, but the response had no id. Find it in the list.`);
         return;
       }
-      navigate(`/dashboard/media-providers/combo/${created.id}`);
+      navigate(`/dashboard/media-providers/combo/${mine.id}`);
     } catch (e) {
-      alert(`Combo created, but the response could not be read (${e.message}).`);
+      await fetchAll();
+      alert(`"${name}" was created, but the response could not be read (${e.message}).`);
     }
   };
 
