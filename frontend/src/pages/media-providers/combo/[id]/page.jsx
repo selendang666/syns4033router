@@ -7,6 +7,12 @@ import ProviderIcon from "@/shared/components/ProviderIcon";
 import { AI_PROVIDERS, MEDIA_PROVIDER_KINDS } from "@/shared/constants/providers";
 import { getServerBaseUrl } from "@/shared/constants/config";
 
+function maskKey(k) {
+  if (!k) return "YOUR_KEY";
+  if (k.length <= 10) return k;
+  return `${k.slice(0, 6)}${"\u2022".repeat(Math.min(24, k.length - 6))}`;
+}
+
 // Parse "providerId/model" or just "providerId" → { providerId, model }
 function parseModelEntry(entry) {
   if (typeof entry !== "string") return { providerId: "", model: "" };
@@ -48,6 +54,7 @@ export default function ComboDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [combo, setCombo] = useState(null);
+  const [revealKey, setRevealKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
@@ -235,7 +242,7 @@ export default function ComboDetailPage() {
   const examplePath = EXAMPLE_PATHS[combo.kind];
   const exampleBody = combo.kind && EXAMPLE_BODIES[combo.kind] ? EXAMPLE_BODIES[combo.kind](combo.name) : null;
   const curlExample = examplePath
-    ? `curl -X POST ${getServerBaseUrl()}${examplePath} \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey || "YOUR_KEY"}" \\\n  -d '${JSON.stringify(exampleBody)}'`
+    ? `curl -X POST ${getServerBaseUrl()}${examplePath} \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${revealKey ? (apiKey || "YOUR_KEY") : maskKey(apiKey)}" \\\n  -d '${JSON.stringify(exampleBody)}'`
     : "";
   const backHref = getListingHref(combo.kind);
 
@@ -339,8 +346,18 @@ export default function ComboDetailPage() {
             </Button>
           </div>
           <pre className="text-xs font-mono bg-black/[0.03] dark:bg-white/[0.03] p-3 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
-            {curlExample}
+            {curlExample.replace(/Bearer [A-Za-z0-9\u2022_-]+/, `Bearer ${revealKey ? (apiKey || "YOUR_KEY") : maskKey(apiKey)}`)}
           </pre>
+          {apiKey && (
+            <button
+              type="button"
+              onClick={() => setRevealKey((v) => !v)}
+              className="mt-2 inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">{revealKey ? "visibility_off" : "visibility"}</span>
+              {revealKey ? "Hide API key" : "Reveal API key"}
+            </button>
+          )}
           {testError && (
             <p className="mt-3 text-xs text-red-500 break-words">{testError}</p>
           )}

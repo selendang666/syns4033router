@@ -360,6 +360,29 @@ permintaan login tanpa body membalas 500 beserta keterangan internal,
 bukan penolakan yang bersih. Semua kini memakai `req.body || {}`.
 — `backend/src/routes/**` (30 file) · `[test]`
 
+### Media Providers: masking API key jadi hiasan
+
+Baris "API Key" menutup key dengan `apiKey.slice(0, 8)` + titik, tapi blok
+curl di bawahnya menginterpolasi key utuh:
+
+```
+API Key   sk-ec7fa••••••••••••••
+curl …    -H "Authorization: Bearer sk-ec7fa4c79…a22b60d9"
+```
+
+Key penuh ada di DOM halaman itu — diperiksa dengan mencocokkan key asli
+dari `/api/keys` ke `document.body.innerHTML`, dan cocok di 4 dari 6 halaman
+detail. Ini satu-satunya file di seluruh frontend yang masking sekaligus
+menaruh key mentah; halaman lain menampilkan penuh apa adanya atau masking
+konsisten.
+
+Blok curl sekarang ikut memakai `maskKey()` dan ada tombol Reveal di
+sebelah baris API Key, jadi masking-nya benar-benar melindungi sampai
+diminta. `combo/[id]` tidak punya baris API Key sama sekali, jadi tombolnya
+ditempatkan di bawah blok curl-nya.
+— `frontend/src/pages/media-providers/[kind]/[id]/page.jsx`
+— `frontend/src/pages/media-providers/combo/[id]/page.jsx` · `[test]`
+
 ### Media Providers: `/dashboard/media-providers` melempar operator ke halaman login
 
 Path polos tidak punya route sama sekali. Yang terdaftar hanya

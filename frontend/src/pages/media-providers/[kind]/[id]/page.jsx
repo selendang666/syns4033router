@@ -14,6 +14,12 @@ import { getTtsVoicesForModel } from "@/shared/config/ttsModels.js";
 import { GOOGLE_TTS_LANGUAGES } from "@/shared/config/googleTtsLanguages.js";
 
 // Shared row layout — defined outside components to avoid re-mount on re-render
+function maskKey(k) {
+  if (!k) return "YOUR_KEY";
+  if (k.length <= 10) return k;
+  return `${k.slice(0, 6)}${"\u2022".repeat(Math.min(24, k.length - 6))}`;
+}
+
 function Row({ label, children }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
@@ -144,6 +150,7 @@ function EmbeddingExampleCard({ providerId, customAlias }) {
   const embeddingModels = isCustom ? [] : getModelsByProviderId(providerId).filter((m) => m.type === "embedding");
 
   const [selectedModel, setSelectedModel] = useState(embeddingModels[0]?.id ?? "");
+  const [revealKey, setRevealKey] = useState(false);
   const [input, setInput] = useState("The quick brown fox jumps over the lazy dog");
   const [dimensions, setDimensions] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -181,7 +188,7 @@ function EmbeddingExampleCard({ providerId, customAlias }) {
 
   const curlSnippet = `curl -X POST ${endpoint}/v1/embeddings \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${apiKey || "YOUR_KEY"}" \\
+  -H "Authorization: Bearer ${revealKey ? (apiKey || "YOUR_KEY") : maskKey(apiKey)}" \\
   -d '${JSON.stringify(buildBody())}'`;
 
   const handleRun = async () => {
@@ -380,6 +387,7 @@ function TtsExampleCard({ providerId }) {
 
   // Voice state
   const [selectedVoice, setSelectedVoice]     = useState(config.defaultVoiceId || "");
+  const [revealKey, setRevealKey] = useState(false);
   const [selectedVoiceName, setSelectedVoiceName] = useState("");
   const [voiceId, setVoiceId]               = useState(config.defaultVoiceId || ""); // editable voice id (elevenlabs/config providers)
   // Voices shown below Voice row after language selected
@@ -545,7 +553,7 @@ function TtsExampleCard({ providerId }) {
   })();
   const curlSnippet = `curl -X POST ${endpoint}/v1/audio/speech${responseFormat === "json" ? "?response_format=json" : ""} \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${apiKey || "YOUR_KEY"}" \\
+  -H "Authorization: Bearer ${revealKey ? (apiKey || "YOUR_KEY") : maskKey(apiKey)}" \\
   -d '${JSON.stringify(ttsBody)}' \\
   ${responseFormat === "json" ? "" : "--output speech.mp3"}`;
 
@@ -616,7 +624,15 @@ function TtsExampleCard({ providerId }) {
           </Row>
           <Row label="API Key">
             <span className="px-3 py-1.5 text-sm font-mono text-text-main bg-sidebar rounded-lg truncate block">
-              {apiKey ? `${apiKey.slice(0, 8)}${"•".repeat(Math.min(20, apiKey.length - 8))}` : <span className="text-text-muted italic">No key configured</span>}
+              {apiKey ? (revealKey ? apiKey : maskKey(apiKey)) : <span className="text-text-muted italic">No key configured</span>}            <button
+              type="button"
+              onClick={() => setRevealKey((v) => !v)}
+              className="flex items-center gap-1 px-2 py-1.5 rounded text-xs text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
+              title={revealKey ? "Hide the API key" : "Show the API key"}
+            >
+              <span className="material-symbols-outlined text-[14px]">{revealKey ? "visibility_off" : "visibility"}</span>
+              {revealKey ? "Hide" : "Reveal"}
+            </button>
             </span>
           </Row>
 
@@ -937,6 +953,7 @@ function GenericExampleCard({ providerId, kind }) {
   const needsModel = KIND_NEEDS_MODEL.has(kind);
   const allowManualModel = needsModel && kindModels.length === 0;
   const [selectedModel, setSelectedModel] = useState(kindModels[0]?.id ?? "");
+  const [revealKey, setRevealKey] = useState(false);
   const selectedModelObj = kindModels.find((m) => m.id === selectedModel);
 
   const supportsEdit = !!selectedModelObj?.capabilities?.includes("edit");
@@ -1044,7 +1061,7 @@ function GenericExampleCard({ providerId, kind }) {
   const wantBinary = kind === "image" && imageOutputFormat === "binary";
   const useStreaming = kind === "image" && providerId === "codex" && !wantBinary;
   const apiPathWithQuery = `${apiPath}${wantBinary ? "?response_format=binary" : ""}`;
-  const headersPreview = `-H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey || "YOUR_KEY"}"${pinnedConnectionId ? ` \\\n  -H "x-connection-id: ${pinnedConnectionId}"` : ""}${useStreaming ? ` \\\n  -H "Accept: text/event-stream"` : ""}`;
+  const headersPreview = `-H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${revealKey ? (apiKey || "YOUR_KEY") : maskKey(apiKey)}"${pinnedConnectionId ? ` \\\n  -H "x-connection-id: ${pinnedConnectionId}"` : ""}${useStreaming ? ` \\\n  -H "Accept: text/event-stream"` : ""}`;
   const curlSnippet = `curl -X ${kindConfig.endpoint.method} ${endpoint}${apiPathWithQuery} \\
   ${headersPreview.replace(/\\\n  /g, "\\\n  ")} \\
   -d '${JSON.stringify(requestBody)}'${wantBinary ? " \\\n  --output image.png" : ""}`;
@@ -1195,7 +1212,15 @@ function GenericExampleCard({ providerId, kind }) {
         {/* API Key */}
         <Row label="API Key">
           <span className="px-3 py-1.5 text-sm font-mono text-text-main bg-sidebar rounded-lg truncate block">
-            {apiKey ? `${apiKey.slice(0, 8)}${"\u2022".repeat(Math.min(20, apiKey.length - 8))}` : <span className="text-text-muted italic">No key configured</span>}
+            {apiKey ? (revealKey ? apiKey : maskKey(apiKey)) : <span className="text-text-muted italic">No key configured</span>}            <button
+              type="button"
+              onClick={() => setRevealKey((v) => !v)}
+              className="flex items-center gap-1 px-2 py-1.5 rounded text-xs text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
+              title={revealKey ? "Hide the API key" : "Show the API key"}
+            >
+              <span className="material-symbols-outlined text-[14px]">{revealKey ? "visibility_off" : "visibility"}</span>
+              {revealKey ? "Hide" : "Reveal"}
+            </button>
           </span>
         </Row>
 
@@ -1515,6 +1540,7 @@ function SttExampleCard({ providerId }) {
   const providerAlias = getProviderAlias(providerId);
   const builtinSttModels = getModelsByProviderId(providerId).filter((m) => m.type === "stt");
   const [customSttModels, setCustomSttModels] = useState([]);
+  const [revealKey, setRevealKey] = useState(false);
   const sttModels = [...builtinSttModels, ...customSttModels];
 
   const [selectedModel, setSelectedModel] = useState(builtinSttModels[0]?.id ?? "");
@@ -1569,7 +1595,7 @@ function SttExampleCard({ providerId }) {
   const modelFull = selectedModel ? `${providerAlias}/${selectedModel}` : "";
 
   const curlSnippet = `curl -X POST ${endpoint}/v1/audio/transcriptions \\
-  -H "Authorization: Bearer ${apiKey || "YOUR_KEY"}" \\
+  -H "Authorization: Bearer ${revealKey ? (apiKey || "YOUR_KEY") : maskKey(apiKey)}" \\
   -F "file=@${audioFile?.name || "audio.mp3"}" \\
   -F "model=${modelFull}"${allowedParams.includes("language") && language ? ` \\\n  -F "language=${language}"` : ""}${allowedParams.includes("response_format") ? ` \\\n  -F "response_format=${responseFormat}"` : ""}${allowedParams.includes("temperature") && temperature ? ` \\\n  -F "temperature=${temperature}"` : ""}${allowedParams.includes("prompt") && prompt ? ` \\\n  -F "prompt=${prompt}"` : ""}`;
 
@@ -1660,7 +1686,15 @@ function SttExampleCard({ providerId }) {
         {/* API Key */}
         <Row label="API Key">
           <span className="px-3 py-1.5 text-sm font-mono text-text-main bg-sidebar rounded-lg truncate block">
-            {apiKey ? `${apiKey.slice(0, 8)}${"\u2022".repeat(Math.min(20, apiKey.length - 8))}` : <span className="text-text-muted italic">No key configured</span>}
+            {apiKey ? (revealKey ? apiKey : maskKey(apiKey)) : <span className="text-text-muted italic">No key configured</span>}            <button
+              type="button"
+              onClick={() => setRevealKey((v) => !v)}
+              className="flex items-center gap-1 px-2 py-1.5 rounded text-xs text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
+              title={revealKey ? "Hide the API key" : "Show the API key"}
+            >
+              <span className="material-symbols-outlined text-[14px]">{revealKey ? "visibility_off" : "visibility"}</span>
+              {revealKey ? "Hide" : "Reveal"}
+            </button>
           </span>
         </Row>
 
