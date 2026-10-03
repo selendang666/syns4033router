@@ -360,6 +360,26 @@ permintaan login tanpa body membalas 500 beserta keterangan internal,
 bukan penolakan yang bersih. Semua kini memakai `req.body || {}`.
 — `backend/src/routes/**` (30 file) · `[test]`
 
+### Docs: contoh model yang tidak ada
+
+Teks parameter `model` memberi contoh `leo-sora-2`, dan satu link menuju
+`/v1/models/info?id=leonardo/leo-sora-2`. Keduanya 404:
+
+```
+GET /v1/models/info?id=leonardo/leo-sora-2      → Model not found
+GET /v1/models/info?id=leonardo/leo-sora        → "Sora 2", kind video
+GET /v1/models/info?id=leonardo/leo-sora-2-pro  → "Sora 2 Pro"
+```
+
+Id yang benar adalah `leo-sora`; `leo-sora-2` hanya muncul di katalog sebagai
+awalan `leo-sora-2-pro`. Kedua contoh sekarang memakai `leo-sora`.
+— `frontend/public/image-video-docs.html` · `[test]`
+
+Katalog model yang ditanam di halaman itu adalah agregat lintas-provider
+(`@cf/…` lewat Cloudflare Workers AI, `… (via HuggingFace)`, `… (via OpenRouter)`),
+jadi tidak selalu bisa dibandingkan dengan katalog lokal. Itu diperiksa dulu
+sebelum menyimpulkan{id} tersebut salah.
+
 ### Docs: contoh respons `/v1/models/info` salah, endpoint video tidak pernah ditulis
 
 Halaman Docs menampilkan contoh respons untuk `GET /v1/models/info?id=weavy/weavy-kling`
