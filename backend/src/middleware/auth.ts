@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyDashboardAuthToken } from "../lib/auth/dashboardSession.js";
+import { getDashboardAuthSession } from "../lib/auth/dashboardSession.js";
 import { getSettings, validateApiKey } from "../lib/localDb.js";
 import { getConsistentMachineId } from "../shared/utils/machineId.js";
 
@@ -54,20 +54,41 @@ const PUBLIC_API_PATHS = [
 
 const PUBLIC_PREFIXES = ["/v1", "/v1beta", "/api/v1", "/api/v1beta"];
 
-const ALWAYS_PROTECTED = [
-  "/api/shutdown",
+// Dashboard accounts carry a role. "user" is a portal account limited to their
+// own key and aggregate stats; "admin" owns the router. Admin paths answer 404
+// to a user rather than 403 — a 403 confirms the route exists, which is the one
+// thing the split is meant to hide.
+const ALWAYS_PROTECTED = ["/api/shutdown",
   "/api/settings/database",
   "/api/version/shutdown",
   "/api/version/update",
-  // Key management is admin-grade: listing returns every key in plaintext and
-  // POST/DELETE mint or destroy credentials. Same for settings and providers,
-  // which decide where traffic is routed.
   "/api/keys",
   "/api/settings",
   "/api/providers",
   "/api/provider-nodes",
   "/api/system-prompts",
+  "/api/admin",
+  "/api/system-prompts",
+  "/api/combos",
+  "/api/translator",
+  "/api/media-providers",
+  "/api/mcp",
+  "/api/automation",
+  "/api/mitm",
+  "/api/proxy-pools",
+  "/api/cve",
 ];
+
+// One list, two gates. ALWAYS_PROTECTED keeps an LLM API key out of the
+// dashboard; ADMIN_PATHS additionally keeps a "user"-role session out of it.
+// They were maintained separately, which left /api/combos and /api/admin
+// reachable with an API key while the role check assumed they were covered.
+// A user gets 404 rather than 403: a 403 would confirm the route exists.
+const ADMIN_PATHS = ALWAYS_PROTECTED;
+
+const isAdminPath = (path: string) =>
+  ADMIN_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+
 
 const PROTECTED_API_PATHS = [
   "/api/settings",
@@ -125,11 +146,23 @@ export async function authMiddleware(
     const settings = await getSettings();
     const requireLogin = settings?.requireLogin ?? false;
 
-    // Check JWT cookie
+    // Check JWT cookie. verifyDashboardAuthToken throws the claims away, so read
+    // the session instead — the role check below needs them.
     const token = req.cookies?.["syns4033_session"];
     if (token) {
-      const valid = await verifyDashboardAuthToken(token);
-      if (valid) return next();
+      const session = await getDashboardAuthSession(token);
+      if (session) {
+        // No role claim means the session predates roles — the password and
+        // OIDC logins do not set one — and those are the router's own operator.
+        // Treating them as "user" would lock the admin out of their own router.
+        const role = session.role === "user" ? "user" : "admin";
+        if (role !== "admin" && isAdminPath(path)) {
+          // Not "Forbidden": a 403 would confirm the route exists.
+          return res.status(404).json({ error: "Not found" });
+        }
+        (req as { session?: Record<string, unknown> }).session = { ...session, role };
+        return next();
+      }
     }
 
     // If login not required and path not always-protected

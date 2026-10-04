@@ -1,5 +1,5 @@
 // Latest schema version — bumped when a migration is added in ./migrations/
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const PRAGMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -77,10 +77,29 @@ export const TABLES = {
       key: "TEXT UNIQUE NOT NULL",
       name: "TEXT",
       machineId: "TEXT",
+      // Owning account. NULL means the key was created by an admin at the
+      // console; a portal user is limited to their own single key.
+      userId: "TEXT",
       isActive: "INTEGER DEFAULT 1",
       createdAt: "TEXT NOT NULL",
     },
-    indexes: ["CREATE INDEX IF NOT EXISTS idx_ak_key ON apiKeys(key)"],
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_ak_key ON apiKeys(key)",
+      "CREATE INDEX IF NOT EXISTS idx_ak_user ON apiKeys(userId)",
+    ],
+  },
+  users: {
+    columns: {
+      id: "TEXT PRIMARY KEY",
+      username: "TEXT UNIQUE NOT NULL",
+      passwordHash: "TEXT NOT NULL",
+      // "admin" owns the router, "user" is limited to their own key and stats.
+      role: "TEXT NOT NULL DEFAULT 'user'",
+      keyId: "TEXT",
+      isActive: "INTEGER DEFAULT 1",
+      createdAt: "TEXT NOT NULL",
+    },
+    indexes: ["CREATE INDEX IF NOT EXISTS idx_u_role ON users(role)"],
   },
   combos: {
     columns: {

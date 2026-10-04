@@ -1,5 +1,6 @@
 
 import { publicMessage } from "../../../lib/publicMessage.js";
+import { getUserRowByUsername } from "../../../lib/db/repos/usersRepo.js";
 import { getSettings } from "../../../lib/localDb.js";
 import bcrypt from "bcryptjs";
 import { setDashboardAuthCookie } from "../../../lib/auth/dashboardSession.js";
@@ -28,8 +29,27 @@ export async function POST_handler(req, res) {
       });
     }
 
-    const { password } = req.body || {};
+    const { password, username } = req.body || {};
     const settings = await getSettings();
+
+    // Portal accounts sign in with username + password. They are checked first
+    // so a username that happens to equal the router password cannot ride in on
+    // the operator's credentials.
+    if (typeof username === "string" && username.trim()) {
+      const row = await getUserRowByUsername(username.trim());
+      const ok = row && (row.isActive === 1 || row.isActive === true) && await bcrypt.compare(password || "", row.passwordHash);
+      if (!ok) {
+        const { remainingBeforeLock } = recordFail(ip);
+        return res.status(401).json({ error: "Invalid username or password", remainingBeforeLock });
+      }
+      recordSuccess(ip);
+      await setDashboardAuthCookie(res, req, {
+        role: row.role === "admin" ? "admin" : "user",
+        userId: row.id,
+        username: row.username,
+      });
+      return res.json({ success: true, role: row.role === "admin" ? "admin" : "user" });
+    }
 
     // Block login via tunnel/tailscale if dashboard access is disabled
     if (isTunnelRequest(req, settings) && settings.tunnelDashboardAccess !== true) {
