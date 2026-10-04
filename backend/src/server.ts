@@ -48,6 +48,26 @@ app.use(cookieParser());
 app.use(express.json({ limit: "128mb" }));
 app.use(express.urlencoded({ extended: true, limit: "128mb" }));
 
+// Reject absurdly nested bodies before a handler walks them. A few thousand
+// levels of arrays parse fine and then overflow the stack somewhere further in,
+// which surfaced as a 500 with "Maximum call stack size exceeded" in the
+// response. Real requests nest a handful of levels; the cap is far above that.
+const MAX_BODY_DEPTH = 64;
+app.use((req, res, next) => {
+  const tooDeep = (value: unknown, depth = 0): boolean => {
+    if (depth > MAX_BODY_DEPTH) return true;
+    if (Array.isArray(value)) return value.some((item) => tooDeep(item, depth + 1));
+    if (value && typeof value === "object") {
+      return Object.values(value).some((item) => tooDeep(item, depth + 1));
+    }
+    return false;
+  };
+  if (req.body && typeof req.body === "object" && tooDeep(req.body)) {
+    return res.status(400).json({ error: "Request body nested too deeply" });
+  }
+  return next();
+});
+
 // ─── Health Check (no auth) ────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", version: "3.0.0", ts: Date.now() });
