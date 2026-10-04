@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import ComingSoon from "./pages/coming-soon/page.jsx";
 import Member from "./pages/member/page.jsx";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { DashboardLayout } from "@/shared/components/layouts";
 
 // Lazy-loaded pages (code splitting — loads each page only when needed)
@@ -35,13 +35,55 @@ const MediaProviderComboDetail = lazy(() => import("./pages/media-providers/comb
 const WeavyPool          = lazy(() => import("./pages/providers/weavy/pool/page"));
 const AmmailTutorial     = lazy(() => import("./pages/automation/ammail-tutorial/page"));
 
-// Auth guard — check if dashboard session cookie is present
+// Dashboard routes a portal account may not open. The API answers 404 on these
+// paths, so letting the page mount only produces a half-rendered screen and a
+// console full of failed fetches; the route has to refuse in the same place the
+// backend does.
+const ADMIN_PAGES = new Set([
+  "endpoint", "providers", "providers/new", "combos", "usage", "live-traffic",
+  "api-health", "cloudflare-deploy", "anti-roseller", "paket-harga", "member",
+  "proxy-pools", "model-rebranding", "system-prompt", "mitm", "cli-tools",
+  "automation", "skills", "docs", "console-log", "profile",
+]);
+
+// Auth guard — session cookie must be present and, for admin pages, the role
+// must be admin. Role comes from /api/auth/status; unknown means admin so the
+// operator's own session is never locked out.
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  // Simple check — backend /api/auth/status will confirm
+  const [role, setRole] = useState<string | null>(null);
   const hasSession = document.cookie.includes("syns4033_session") ||
                      localStorage.getItem("9r_authed") === "1";
+
+  useEffect(() => {
+    if (!hasSession) return;
+    let alive = true;
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((d) => alive && setRole(d?.role === "user" ? "user" : "admin"))
+      .catch(() => alive && setRole("admin"));
+    return () => { alive = false; };
+  }, [hasSession]);
+
   if (!hasSession) return <Navigate to="/login" replace />;
+  if (role === null) return <LoadingFallback />;
+  if (role === "user") {
+    const page = window.location.pathname.replace(/^\/dashboard\/?/, "").split("/")[0];
+    if (ADMIN_PAGES.has(page)) return <NotFound />;
+  }
   return <>{children}</>;
+}
+
+function NotFound() {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-3xl font-semibold tracking-tight text-text-main">Not found</h1>
+      <p className="text-text-muted mt-2">Halaman ini tidak tersedia.</p>
+      <Link to="/dashboard/usage" className="mt-6 inline-flex items-center gap-1 text-sm text-text-muted hover:text-primary">
+        <span className="material-symbols-outlined text-lg">arrow_back</span>
+        Kembali
+      </Link>
+    </div>
+  );
 }
 
 function LoadingFallback() {
