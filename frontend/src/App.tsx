@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ComingSoon from "./pages/coming-soon/page.jsx";
+import Member from "./pages/member/page.jsx";
 import { Suspense, lazy } from "react";
 import { DashboardLayout } from "@/shared/components/layouts";
 
@@ -102,7 +103,7 @@ export default function App() {
           <Route path="cloudflare-deploy" element={<ComingSoon />} />
           <Route path="anti-roseller" element={<ComingSoon />} />
           <Route path="paket-harga" element={<ComingSoon />} />
-          <Route path="member" element={<ComingSoon />} />
+          <Route path="member" element={<Member />} />
           <Route path="token-saver" element={<ComingSoon />} />
           <Route path="model-rebranding" element={<ComingSoon />} />
       <Route path="*" element={<Navigate to="/" replace />} />

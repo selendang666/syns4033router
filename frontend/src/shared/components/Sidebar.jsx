@@ -16,6 +16,31 @@ const VISIBLE_MEDIA_KINDS = ["embedding", "image", "tts", "stt", "video"];
 // Combined entry: webSearch + webFetch share one page at /dashboard/media-providers/web
 const COMBINED_WEB_ITEM = { id: "web", label: "Web Fetch & Search", icon: "travel_explore", href: "/dashboard/media-providers/web" };
 
+// Portal users see a reduced navigation. Hiding a link is convenience, not
+// security — the routes answer 404 for them regardless — but a menu full of
+// buttons that 404 is worse than a menu that matches what the account can do.
+const USER_VISIBLE = new Set([
+  "/dashboard/pemakaian",
+  "/dashboard/live-traffic",
+  "/dashboard/quota",
+  "/dashboard/token-saver",
+]);
+
+function useRole() {
+  const [role, setRole] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((d) => alive && setRole(d?.role === "user" ? "user" : "admin"))
+      .catch(() => alive && setRole("admin"));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return role;
+}
+
 const navItems = [
   { href: "/dashboard/endpoint", label: "Endpoint & Key", icon: "api" },
   { href: "/dashboard/providers", label: "Providers", icon: "dns" },
@@ -56,6 +81,8 @@ const systemItems = [
 ];
 
 export default function Sidebar({ onClose }) {
+  const role = useRole();
+  const visible = (items) => (role === "user" ? items.filter((i) => USER_VISIBLE.has(i.href)) : items);
   const { pathname } = useLocation();
   const [mediaOpen, setMediaOpen] = useState(false);
   const [showRemoteModal, setShowRemoteModal] = useState(false);
@@ -173,7 +200,7 @@ export default function Sidebar({ onClose }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => (
+          {visible(navItems).map((item) => (
             <Link
               key={item.href}
               to={item.href}
@@ -254,7 +281,7 @@ export default function Sidebar({ onClose }) {
               </div>
             )}
 
-            {systemItems.map((item) => (
+            {(role === "user" ? null : systemItems).map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
@@ -279,7 +306,7 @@ export default function Sidebar({ onClose }) {
             ))}
 
             {/* Debug items (inside System section, before Settings) */}
-            {toolItems.map((item) => {
+            {(role === "user" ? null : toolItems).map((item) => {
               const show = item.href !== "/dashboard/translator" || enableTranslator;
               return show ? (
                 <Link

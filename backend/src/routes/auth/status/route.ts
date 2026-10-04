@@ -30,6 +30,10 @@ export async function GET(req, res) {
       oidcEmail: oidcEmail || null,
       oidcLogin: !!session?.oidc,
       isLoggedIn: !!session,
+      // No role claim means a password/OIDC login, which is the router's own
+      // operator. The sidebar uses this to hide admin entries for portal users.
+      role: session?.role === "user" ? "user" : "admin",
+      username: session?.username || null,
     });
   } catch {
     return res.json({
