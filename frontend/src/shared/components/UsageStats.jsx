@@ -267,27 +267,24 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
   const period = periodProp ?? periodLocal;
   const setPeriod = setPeriodProp ?? setPeriodLocal;
 
-  // Fetch connected providers once, deduplicate by provider type
-  // Always include noAuth free providers (e.g. opencode) regardless of connections
+  // Derive the filter list from the usage data we already have, plus the built-in
+  // free providers. Fetching /api/providers for this was two birds: it is an
+  // admin route, so a portal user got a 404 on every usage page, and it returned
+  // connection records when the dropdown only ever needed a provider id.
   useEffect(() => {
-    fetch("/api/providers")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        const seen = new Set();
-        const unique = (d?.connections || []).filter((c) => {
-          if (c.isActive === false) return false;
-          if (!isLLMProvider(c.provider)) return false;
-          if (seen.has(c.provider)) return false;
-          seen.add(c.provider);
-          return true;
-        });
-        const noAuthProviders = Object.values(FREE_PROVIDERS)
-          .filter((p) => p.noAuth && !seen.has(p.id) && isLLMProvider(p.id))
-          .map((p) => ({ provider: p.id, name: p.name }));
-        setProviders([...unique, ...noAuthProviders]);
+    const seen = new Set();
+    const used = Object.keys(stats?.byProvider || {})
+      .filter((id) => {
+        if (!isLLMProvider(id) || seen.has(id)) return false;
+        seen.add(id);
+        return true;
       })
-      .catch(() => {});
-  }, []);
+      .map((id) => ({ provider: id, name: AI_PROVIDERS[id]?.name || id }));
+    const free = Object.values(FREE_PROVIDERS)
+      .filter((p) => p.noAuth && !seen.has(p.id) && isLLMProvider(p.id))
+      .map((p) => ({ provider: p.id, name: p.name }));
+    setProviders([...used, ...free]);
+  }, [stats?.byProvider]);
 
   // Fetch filtered stats via REST when period changes
   useEffect(() => {
