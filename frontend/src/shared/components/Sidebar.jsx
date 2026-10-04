@@ -281,7 +281,7 @@ export default function Sidebar({ onClose }) {
               </div>
             )}
 
-            {(role === "user" ? null : systemItems).map((item) => (
+            {(role === "user" ? [] : systemItems).map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
@@ -306,7 +306,7 @@ export default function Sidebar({ onClose }) {
             ))}
 
             {/* Debug items (inside System section, before Settings) */}
-            {(role === "user" ? null : toolItems).map((item) => {
+            {(role === "user" ? [] : toolItems).map((item) => {
               const show = item.href !== "/dashboard/translator" || enableTranslator;
               return show ? (
                 <Link
