@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { assertClientSecret } from "../assertSecret.js";
 import open from "open";
 import { ANTIGRAVITY_CONFIG, getOAuthClientMetadata } from "../constants/oauth.js";
 import { getServerCredentials } from "../config/index.js";
@@ -35,6 +36,7 @@ export class AntigravityService {
    * Exchange authorization code for tokens
    */
   async exchangeCode(code, redirectUri) {
+    assertClientSecret(this.config.clientSecret, "ANTIGRAVITY_CONFIG");
     const response = await fetch(this.config.tokenUrl, {
       method: "POST",
       headers: {

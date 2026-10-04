@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { assertClientSecret } from "../assertSecret.js";
 import open from "open";
 import { GEMINI_CONFIG, getOAuthClientMetadata } from "../constants/oauth.js";
 import { getServerCredentials } from "../config/index.js";
@@ -35,6 +36,7 @@ export class GeminiCLIService {
    * Exchange authorization code for tokens
    */
   async exchangeCode(code, redirectUri) {
+    assertClientSecret(this.config.clientSecret, "GEMINI_CONFIG");
     const response = await fetch(this.config.tokenUrl, {
       method: "POST",
       headers: {

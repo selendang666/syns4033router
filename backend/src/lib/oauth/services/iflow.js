@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { assertClientSecret } from "../assertSecret.js";
 import open from "open";
 import { IFLOW_CONFIG } from "../constants/oauth.js";
 import { getServerCredentials } from "../config/index.js";
@@ -33,6 +34,7 @@ export class IFlowService {
    * Exchange authorization code for tokens
    */
   async exchangeCode(code, redirectUri) {
+    assertClientSecret(this.config.clientSecret, "IFLOW_CONFIG");
     // Create Basic Auth header
     const basicAuth = Buffer.from(
       `${this.config.clientId}:${this.config.clientSecret}`
