@@ -96,20 +96,25 @@ export default function Sidebar({ onClose }) {
 
   const INSTALL_CMD = UPDATER_CONFIG.installCmdLatest;
 
+  // enableTranslator and the update banner are operator concerns; a portal user
+  // gets 404 on /api/settings by design, so asking produces a console full of
+  // failures for a value they cannot use. Skip until the role resolves to admin.
   useEffect(() => {
+    if (role !== "admin") return;
     fetch("/api/settings")
       .then(res => res.json())
       .then(data => { if (data.enableTranslator) setEnableTranslator(true); })
       .catch(() => {});
-  }, []);
+  }, [role]);
 
   // Lazy check for new npm version on mount
   useEffect(() => {
+    if (role !== "admin") return;
     fetch("/api/version")
       .then(res => res.json())
       .then(data => { if (data.hasUpdate) setUpdateInfo(data); })
       .catch(() => {});
-  }, []);
+  }, [role]);
 
   const isActive = (href) => {
     if (href === "/dashboard/endpoint") {
