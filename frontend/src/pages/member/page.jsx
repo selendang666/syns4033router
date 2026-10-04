@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 
-const mask = (key) => (key ? `${key.slice(0, 11)}…${key.slice(-4)}` : "—");
+function Field({ label, ...rest }) {
+  return (
+    <div className="flex-1">
+      <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+        {label}
+      </label>
+      <input
+        {...rest}
+        className="w-full px-3 py-2 rounded-full bg-surface border border-border-subtle text-sm text-text-main"
+      />
+    </div>
+  );
+}
 
 export default function Member() {
   const [users, setUsers] = useState([]);
@@ -38,8 +50,8 @@ export default function Member() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create user");
-      // Shown once and never again — the list only carries the key id, so this is
-      // the single chance to hand it over.
+      // Shown once and never again — the list carries only the key id, so this
+      // panel is the single chance to hand it over.
       setNewKey(data.key);
       setForm({ username: "", password: "" });
       await load();
@@ -72,29 +84,19 @@ export default function Member() {
       </p>
 
       <form onSubmit={create} className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
-            Username
-          </label>
-          <input
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            placeholder="3-32 karakter: huruf, angka, . _ -"
-            className="w-full px-3 py-2 rounded-full bg-surface border border-border-subtle text-sm text-text-main"
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
-            Password
-          </label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder="minimal 8 karakter"
-            className="w-full px-3 py-2 rounded-full bg-surface border border-border-subtle text-sm text-text-main"
-          />
-        </div>
+        <Field
+          label="Username"
+          value={form.username}
+          onChange={(e) => setForm({ ...form, username: e.target.value })}
+          placeholder="3-32 karakter: huruf, angka, . _ -"
+        />
+        <Field
+          type="password"
+          label="Password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          placeholder="minimal 8 karakter"
+        />
         <button
           type="submit"
           disabled={busy}
@@ -146,7 +148,7 @@ export default function Member() {
             <tr key={u.id} className="border-t border-border-subtle">
               <td className="py-2.5 font-medium text-text-main">{u.username}</td>
               <td className="py-2.5 text-text-muted">{u.role}</td>
-              <td className="py-2.5 font-mono text-xs text-text-muted">{mask(u.keyId)}</td>
+              <td className="py-2.5 font-mono text-xs text-text-muted">{u.keyId?.slice(0, 8)}…</td>
               <td className="py-2.5 text-text-muted">
                 {new Date(u.createdAt).toLocaleDateString("id-ID")}
               </td>
