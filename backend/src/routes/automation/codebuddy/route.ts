@@ -35,6 +35,7 @@ function parseProxyString(raw) {
 
   return null;
 }
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
@@ -216,7 +217,7 @@ export async function GET(req, res) {
     });
   } catch (error) {
     console.error("Error in GET /api/automation/codebuddy:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
 
@@ -593,7 +594,7 @@ export async function POST_handler(req, res) {
     return res.status(400).json({ error: "Unknown action" });
   } catch (error) {
     console.error("Error in POST /api/automation/codebuddy:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
 

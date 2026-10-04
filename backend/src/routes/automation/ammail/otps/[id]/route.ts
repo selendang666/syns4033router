@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../../lib/publicMessage.js";
 import { getAmmailOtp, markAmmailOtpUsed, deleteAmmailOtp } from "../../../../../lib/db/index.js";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export async function GET_handler(req, res, { params }) {
     });
   } catch (error) {
     console.error("Error in GET /api/automation/ammail/otps/[id]:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
 
@@ -56,6 +57,6 @@ export async function POST_handler(req, res, { params }) {
     return res.status(400).json({ error: "Unknown action" });
   } catch (error) {
     console.error("Error in POST /api/automation/ammail/otps/[id]:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

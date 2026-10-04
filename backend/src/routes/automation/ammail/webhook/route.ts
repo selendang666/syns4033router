@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { getSettings } from "../../../../lib/localDb.js";
 import { getAmmailClientFromSettings, extractOtp } from "../../../../lib/automation/ammailClient.js";
 import { insertAmmailOtp } from "../../../../lib/db/index.js";
@@ -113,6 +114,6 @@ export async function POST_handler(req, res) {
 
   } catch (error) {
     console.error("Error in POST /api/automation/ammail/webhook:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

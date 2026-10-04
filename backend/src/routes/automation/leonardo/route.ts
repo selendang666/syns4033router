@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { makeKv } from "../../../lib/db/helpers/kvStore.js";
 import { getProviderModels } from "../../../../open-sse/config/providerModels.js";
 
@@ -64,7 +65,7 @@ export async function GET(req, res) {
     const config = await getConfig();
     return res.json({ ok: true, config });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: publicMessage(err.message) });
   }
 }
 
@@ -83,7 +84,7 @@ export async function PUT_handler(req, res) {
     await leoKv.set(CONFIG_KEY, body);
     return res.json({ ok: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: publicMessage(err.message) });
   }
 }
 
@@ -170,6 +171,6 @@ export async function POST_handler(req, res) {
 
     return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: publicMessage(err.message) });
   }
 }

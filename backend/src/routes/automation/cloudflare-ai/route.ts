@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { createProviderConnection, getProviderConnections, updateProviderConnection } from "../../../models/index.js";
 
 export const dynamic = "force-dynamic";
@@ -142,6 +143,6 @@ export async function POST_handler(req: any, res: any) {
     });
   } catch (err: any) {
     console.error("[cloudflare-ai automation]", err);
-    return res.status(500).json({ error: err.message || "Failed to setup Cloudflare Workers AI" });
+    return res.status(500).json({ error: publicMessage(err.message) || "Failed to setup Cloudflare Workers AI" });
   }
 }

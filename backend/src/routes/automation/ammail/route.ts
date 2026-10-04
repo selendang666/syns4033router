@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { getSettings, updateSettings } from "../../../lib/localDb.js";
 import { getAmmailClientFromSettings } from "../../../lib/automation/ammailClient.js";
 import { listAmmailOtps, deleteAmmailOtpsBulk } from "../../../lib/db/index.js";
@@ -148,7 +149,7 @@ export async function GET_handler(req, res) {
     });
   } catch (error) {
     console.error("Error in GET /api/automation/ammail:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
 
@@ -226,7 +227,7 @@ export async function POST_handler(req, res) {
         const info = await testClient.info();
         return res.json({ ok: true, info });
       } catch (e) {
-        return res.status(502).json({ error: e.message || String(e) });
+        return res.status(502).json({ error: publicMessage(e.message) || String(e) });
       }
     }
 
@@ -414,7 +415,7 @@ export async function POST_handler(req, res) {
         });
       } catch (err) {
         console.error("Auto deploy failed:", err);
-        return res.status(502).json({ error: err.message || String(err) });
+        return res.status(502).json({ error: publicMessage(err.message) || String(err) });
       }
     }
 
@@ -430,7 +431,7 @@ export async function POST_handler(req, res) {
         const res = await client.createInbox(alias, domain);
         return res.json({ ok: true, inbox: res.inbox });
       } catch (e) {
-        return res.status(502).json({ error: e.message || String(e) });
+        return res.status(502).json({ error: publicMessage(e.message) || String(e) });
       }
     }
 
@@ -457,7 +458,7 @@ export async function POST_handler(req, res) {
         const webhookRes = await client.setWebhook(webhookUrl, secret);
         return res.json({ ok: true, webhook: webhookRes });
       } catch (e) {
-        return res.status(502).json({ error: e.message || String(e) });
+        return res.status(502).json({ error: publicMessage(e.message) || String(e) });
       }
     }
 
@@ -467,7 +468,7 @@ export async function POST_handler(req, res) {
         const res = await client.testWebhook();
         return res.json({ ok: true, result: res });
       } catch (e) {
-        return res.status(502).json({ error: e.message || String(e) });
+        return res.status(502).json({ error: publicMessage(e.message) || String(e) });
       }
     }
 
@@ -483,7 +484,7 @@ export async function POST_handler(req, res) {
         }
         return res.json({ ok });
       } catch (e) {
-        return res.status(502).json({ error: e.message || String(e) });
+        return res.status(502).json({ error: publicMessage(e.message) || String(e) });
       }
     }
 
@@ -494,13 +495,13 @@ export async function POST_handler(req, res) {
         await deleteAmmailOtpsBulk({ folder, address });
         return res.json({ ok: true });
       } catch (e) {
-        return res.status(500).json({ error: e.message || String(e) });
+        return res.status(500).json({ error: publicMessage(e.message) || String(e) });
       }
     }
 
     return res.status(400).json({ error: "Unknown action" });
   } catch (error) {
     console.error("Error in POST /api/automation/ammail:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
