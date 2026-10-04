@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { enableTunnel } from "../../../lib/tunnel/index.js";
 
 const DNS_WARMUP_DELAY_MS = 8000;
@@ -11,6 +12,6 @@ export async function POST(req, res) {
     return res.json(result);
   } catch (error) {
     console.error("Tunnel enable error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

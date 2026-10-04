@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { createProviderConnection } from "../../../../models/index.js";
 
 const GITLAB_DEFAULT_BASE = "https://gitlab.com";
@@ -57,6 +58,6 @@ export async function POST_handler(req, res) {
     return res.json({ success: true });
   } catch (error) {
     console.error("GitLab PAT auth error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

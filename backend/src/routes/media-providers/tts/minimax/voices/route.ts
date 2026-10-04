@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../../lib/publicMessage.js";
 import { getProviderConnections } from "../../../../../lib/localDb.js";
 
 const MINIMAX_VOICE_ENDPOINTS = {
@@ -108,6 +109,6 @@ export async function GET_handler(req, res) {
 
     return res.json(normalized);
   } catch (err) {
-    return res.status(502).json({ error: err.message || "Failed to fetch MiniMax voices" });
+    return res.status(502).json({ error: publicMessage(err.message) || "Failed to fetch MiniMax voices" });
   }
 }

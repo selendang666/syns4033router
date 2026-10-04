@@ -1,3 +1,4 @@
+import { publicMessage } from "../../../lib/publicMessage.js";
 import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -45,6 +46,6 @@ export async function GET(req, res) {
     const hasCachedPassword = !!(getCachedPassword() || await loadEncryptedPassword());
     return res.json({ installed, loggedIn, platform, brewAvailable, daemonRunning, hasCachedPassword });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

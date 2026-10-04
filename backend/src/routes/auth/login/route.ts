@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { getSettings } from "../../../lib/localDb.js";
 import bcrypt from "bcryptjs";
 import { setDashboardAuthCookie } from "../../../lib/auth/dashboardSession.js";
@@ -76,6 +77,6 @@ export async function POST_handler(req, res) {
       remainingBeforeLock 
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

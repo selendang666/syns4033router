@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import {
   getMitmStatus,
   startServer,
@@ -128,7 +129,7 @@ export async function POST_handler(req, res) {
         const normalized = normalizeMitmRouterBaseUrlInput(mitmRouterBaseUrl);
         await updateSettings({ mitmRouterBaseUrl: normalized });
       } catch (e) {
-        return res.status(400).json({ error: e.message || "Invalid MITM router URL" });
+        return res.status(400).json({ error: publicMessage(e.message) || "Invalid MITM router URL" });
       }
     }
 
@@ -142,7 +143,7 @@ export async function POST_handler(req, res) {
       return res.status(409).json(
         { error: error.message, code: "PORT_443_BUSY", portOwner: error.portOwner });
     }
-    return res.status(500).json({ error: error.message || "Failed to start MITM server" });
+    return res.status(500).json({ error: publicMessage(error.message) || "Failed to start MITM server" });
   }
 }
 
@@ -163,7 +164,7 @@ export async function DELETE_handler(req, res) {
     return res.json({ success: true, running: false });
   } catch (error) {
     console.log("Error stopping MITM server:", error.message);
-    return res.status(500).json({ error: error.message || "Failed to stop MITM server" });
+    return res.status(500).json({ error: publicMessage(error.message) || "Failed to stop MITM server" });
   }
 }
 
@@ -207,6 +208,6 @@ export async function PATCH_handler(req, res) {
     return res.json({ success: true, dnsStatus: status.dnsStatus });
   } catch (error) {
     console.log("Error toggling DNS:", error.message);
-    return res.status(500).json({ error: error.message || "Failed to toggle DNS" });
+    return res.status(500).json({ error: publicMessage(error.message) || "Failed to toggle DNS" });
   }
 }

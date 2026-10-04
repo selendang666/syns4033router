@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { createProviderConnection } from "../../../../models/index.js";
 
 /**
@@ -124,6 +125,6 @@ export async function POST_handler(req, res) {
     });
   } catch (error) {
     console.error("iFlow cookie auth error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

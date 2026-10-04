@@ -1,3 +1,4 @@
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { VOICE_FETCHERS } from "../../../../../open-sse/handlers/ttsCore.js";
 
 
@@ -94,6 +95,6 @@ export async function GET_handler(req, res) {
 
     return res.json({ voices, languages, byLang });
   } catch (err) {
-    return res.status(502).json({ error: err.message || "Failed to fetch voices" });
+    return res.status(502).json({ error: publicMessage(err.message) || "Failed to fetch voices" });
   }
 }

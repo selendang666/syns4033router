@@ -1,5 +1,6 @@
 "use server";
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { findSsrfReason } from "../../../lib/net/ssrfGuard.js";
 
 
@@ -96,6 +97,6 @@ export async function POST_handler(req, res) {
     const result = await probeMcp(url);
     return res.json(result);
   } catch (e) {
-    return res.status(500).json({ error: e.message, tools: [] });
+    return res.status(500).json({ error: publicMessage(e.message), tools: [] });
   }
 }

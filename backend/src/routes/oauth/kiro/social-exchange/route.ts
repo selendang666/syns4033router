@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { KiroService } from "../../../../lib/oauth/services/kiro.js";
 import { createProviderConnection } from "../../../../models/index.js";
 
@@ -58,6 +59,6 @@ export async function POST_handler(req, res) {
     });
   } catch (error) {
     console.log("Kiro social exchange error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

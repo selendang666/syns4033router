@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { getSettings } from "../../../../lib/localDb.js";
 import { fetchOidcDiscovery, getPublicOrigin, probeOidcClientSecret } from "../../../../lib/auth/oidc.js";
 import { verifyDashboardAuthToken } from "../../../../lib/auth/dashboardSession.js";
@@ -81,6 +82,6 @@ export async function POST_handler(req, res) {
       message: secretProbe.message,
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message || "OIDC test failed" });
+    return res.status(500).json({ error: publicMessage(error.message) || "OIDC test failed" });
   }
 }

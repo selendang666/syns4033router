@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { enableTailscale } from "../../../lib/tunnel/index.js";
 
 export async function POST(req, res) {
@@ -7,6 +8,6 @@ export async function POST(req, res) {
     return res.json(result);
   } catch (error) {
     console.error("Tailscale enable error:", error.message);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

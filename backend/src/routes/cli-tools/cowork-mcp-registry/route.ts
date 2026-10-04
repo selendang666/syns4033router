@@ -1,3 +1,4 @@
+import { publicMessage } from "../../../lib/publicMessage.js";
 "use server";
 
 
@@ -72,6 +73,6 @@ export async function GET_handler(req, res) {
     cache.data = data;
     return res.json({ cached: false, ...data });
   } catch (e) {
-    return res.status(500).json({ error: e.message, servers: [], total: 0 });
+    return res.status(500).json({ error: publicMessage(e.message), servers: [], total: 0 });
   }
 }

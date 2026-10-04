@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../../lib/publicMessage.js";
 import { getProviderConnections } from "../../../../../lib/localDb.js";
 import { fetchElevenLabsVoices } from "../../../../../../open-sse/handlers/ttsCore.js";
 
@@ -66,6 +67,6 @@ export async function GET_handler(req, res) {
 
     return res.json({ languages, byLang });
   } catch (err) {
-    return res.status(502).json({ error: err.message || "Failed to fetch voices" });
+    return res.status(502).json({ error: publicMessage(err.message) || "Failed to fetch voices" });
   }
 }

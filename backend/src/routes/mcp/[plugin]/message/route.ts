@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { sendToChild, findPlugin } from "../../../../lib/mcp/stdioSseBridge.js";
 
 export const runtime = "nodejs";
@@ -16,6 +17,6 @@ export async function POST_handler(req, res, { params }) {
     sendToChild(plugin, body);
     return new Response(null, { status: 202 });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: publicMessage(e.message) });
   }
 }

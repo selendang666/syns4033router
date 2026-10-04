@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { getTunnelStatus, getTailscaleStatus, getDownloadStatus } from "../../../lib/tunnel/index.js";
 
 export async function GET(req, res) {
@@ -8,6 +9,6 @@ export async function GET(req, res) {
     return res.json({ tunnel, tailscale, download });
   } catch (error) {
     console.error("Tunnel status error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

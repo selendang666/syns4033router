@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { createProviderConnection } from "../../../../models/index.js";
 import { extractCodexAccountInfo } from "../../../../lib/oauth/providers.js";
 
@@ -89,6 +90,6 @@ export async function POST_handler(req, res) {
     });
   } catch (error) {
     console.log("Codex access token import error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

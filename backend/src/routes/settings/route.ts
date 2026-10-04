@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../lib/publicMessage.js";
 import { getSettings, updateSettings } from "../../lib/localDb.js";
 import { applyOutboundProxyEnv } from "../../lib/network/outboundProxy.js";
 import { resetComboRotation } from "../../../open-sse/services/combo.js";
@@ -61,7 +62,7 @@ export async function GET(req, res) {
     });
   } catch (error) {
     console.log("Error getting settings:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
 
@@ -187,6 +188,6 @@ export async function PATCH_handler(req, res) {
     return res.json(safeSettings);
   } catch (error) {
     console.log("Error updating settings:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

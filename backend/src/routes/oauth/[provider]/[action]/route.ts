@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { 
   getProvider, 
   generateAuthData, 
@@ -188,7 +189,7 @@ export async function GET_handler(req, res, { params }) {
     return res.status(400).json({ error: "Unknown action" });
   } catch (error) {
     console.log("OAuth GET error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
 
@@ -355,6 +356,6 @@ export async function POST_handler(req, res, { params }) {
     return res.status(400).json({ error: "Unknown action" });
   } catch (error) {
     console.log("OAuth POST error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }

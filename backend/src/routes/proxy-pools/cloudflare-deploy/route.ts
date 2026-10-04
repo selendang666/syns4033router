@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../lib/publicMessage.js";
 import { createProxyPool } from "../../../models/index.js";
 
 // Relay worker source code deployed to Cloudflare
@@ -136,6 +137,6 @@ export async function POST_handler(req, res) {
     return res.status(201).json({ proxyPool, deployUrl });
   } catch (error) {
     console.log("Error deploying Cloudflare relay:", error);
-    return res.status(500).json({ error: error.message || "Deploy failed" });
+    return res.status(500).json({ error: publicMessage(error.message) || "Deploy failed" });
   }
 }

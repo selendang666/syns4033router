@@ -1,4 +1,5 @@
 
+import { publicMessage } from "../../../../lib/publicMessage.js";
 import { generatePKCE } from "../../../../lib/oauth/utils/pkce.js";
 import { KiroService } from "../../../../lib/oauth/services/kiro.js";
 
@@ -36,6 +37,6 @@ export async function GET_handler(req, res) {
     });
   } catch (error) {
     console.log("Kiro social authorize error:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: publicMessage(error.message) });
   }
 }
