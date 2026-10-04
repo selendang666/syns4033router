@@ -154,10 +154,12 @@ function comboMatchesKinds(combo, kindFilter) {
  * @param {string[]} kindFilter - List of service kinds to include (e.g. ["llm"], ["webSearch","webFetch"]).
  */
 export async function buildModelsList(kindFilter) {
-  let connections = [];
+  // null means "could not read the DB", [] means "DB is fine, nothing configured".
+  // Those are different answers and the static-catalog fallback below is only
+  // right for the first one.
+  let connections = null;
   try {
-    connections = await getProviderConnections();
-    connections = connections.filter(c => c.isActive !== false);
+    connections = (await getProviderConnections()).filter(c => c.isActive !== false);
   } catch (e) {
     console.log("Could not fetch providers, returning all models");
   }
@@ -192,7 +194,7 @@ export async function buildModelsList(kindFilter) {
   const isDisabled = (alias, modelId) => Array.isArray(disabledByAlias[alias]) && disabledByAlias[alias].includes(modelId);
 
   const activeConnectionByProvider = new Map();
-  for (const conn of connections) {
+  for (const conn of connections ?? []) {
     if (!activeConnectionByProvider.has(conn.provider)) {
       activeConnectionByProvider.set(conn.provider, conn);
     }
@@ -214,8 +216,8 @@ export async function buildModelsList(kindFilter) {
     models.push(entry);
   }
 
-  if (connections.length === 0) {
-    // DB unavailable -> return static models, filtered by per-model kind
+  if (connections === null) {
+    // DB unreadable -> return static models, filtered by per-model kind
     const aliasToProviderId = Object.fromEntries(
       Object.entries(PROVIDER_ID_TO_ALIAS).map(([id, alias]) => [alias, id])
     );
@@ -247,6 +249,22 @@ export async function buildModelsList(kindFilter) {
         id: `${providerAlias}/${modelId}`,
         object: "model",
         owned_by: providerAlias,
+      });
+    }
+  } else if (connections.length === 0) {
+    // DB is fine and the operator has connected nothing. Combos and custom
+    // models were already added above and they do resolve; what is left is the
+    // static catalog, every entry of which needs a credential this install
+    // does not have. Listing them advertises 400+ models that all fail with
+    // "No active credentials", so report the empty state honestly instead.
+    for (const customModel of customModels) {
+      if (!customModel?.id || (customModel.type && customModel.type !== "llm")) continue;
+      if (!kindFilter.includes(LLM_KIND)) continue;
+      if (!customModel.providerAlias) continue;
+      models.push({
+        id: `${customModel.providerAlias}/${String(customModel.id).trim()}`,
+        object: "model",
+        owned_by: customModel.providerAlias,
       });
     }
   } else {

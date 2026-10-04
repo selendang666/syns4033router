@@ -19,6 +19,26 @@ async function hasValidCliToken(req: Request) {
   return token === (await getCliToken());
 }
 
+/**
+ * Collapse the spellings that resolve to the same route so a prefix check
+ * cannot be side-stepped: repeated slashes, percent-encoded slashes and dots,
+ * and a trailing slash. Express decodes req.path for us, so we decode once more
+ * to catch anything that arrived still-encoded.
+ */
+function normalizePath(raw) {
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    // Malformed percent-encoding: fall back to the raw path rather than throw.
+  }
+  const collapsed = decoded.replace(/\/{2,}/g, "/");
+  const rooted = collapsed.startsWith("/") ? collapsed : "/" + collapsed;
+  return decodeURIComponent(
+    rooted.replace(/\/\.\//g, "/").replace(/\/\.$/, "")
+  ).replace(/\/+$/, "").toLowerCase();
+}
+
 // Public paths — no auth required
 const PUBLIC_API_PATHS = [
   "/api/health",
@@ -39,6 +59,14 @@ const ALWAYS_PROTECTED = [
   "/api/settings/database",
   "/api/version/shutdown",
   "/api/version/update",
+  // Key management is admin-grade: listing returns every key in plaintext and
+  // POST/DELETE mint or destroy credentials. Same for settings and providers,
+  // which decide where traffic is routed.
+  "/api/keys",
+  "/api/settings",
+  "/api/providers",
+  "/api/provider-nodes",
+  "/api/system-prompts",
 ];
 
 const PROTECTED_API_PATHS = [
@@ -68,7 +96,10 @@ export async function authMiddleware(
   // `app.use` mounts case-insensitively, so "/API/keys" reaches these routes;
   // comparing the raw path let it skip the public-prefix and protected checks
   // and fall through to the unauthenticated branch.
-  const path = req.path.toLowerCase();
+  // Normalise before any prefix match. "//api/keys" and "/api%2fkeys" both
+  // reach the keys handler but are different strings than "/api/keys", so a
+  // raw req.path comparison let an API key walk straight past ALWAYS_PROTECTED.
+  const path = normalizePath(req.path);
 
   // ALWAYS_PROTECTED is checked first, on purpose. "/api/version" is public so
   // the version endpoint needs no key, but the prefix match made every
@@ -108,14 +139,20 @@ export async function authMiddleware(
       return next();
     }
 
-    // Check API key for LLM endpoints
-    const apiKey = (req.headers["x-api-key"] ||
-      req.headers["authorization"]?.replace("Bearer ", "")) as
-      | string
-      | undefined;
-    if (apiKey) {
-      const valid = await validateApiKey(apiKey);
-      if (valid) return next();
+    // An API key is an LLM-traffic credential: it exists so OpenAI-compatible
+    // clients can call /v1/*. It must never stand in for a dashboard session.
+    // Without this gate a single customer key read /api/settings/database —
+    // the whole database — and could mint or delete other keys, which is
+    // full admin by another name.
+    if (!alwaysProtected) {
+      const apiKey = (req.headers["x-api-key"] ||
+        req.headers["authorization"]?.replace("Bearer ", "")) as
+        | string
+        | undefined;
+      if (apiKey) {
+        const valid = await validateApiKey(apiKey);
+        if (valid) return next();
+      }
     }
 
     return res.status(401).json({ error: "Unauthorized" });

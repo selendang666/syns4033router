@@ -18,9 +18,25 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
+// Reflecting whatever Origin the browser sends means any site on the internet
+// can read credentialed responses. SameSite=Lax on the session cookie is what
+// currently stops that; flipping it to None for a cross-origin integration would
+// turn every /api/* response into a public dump. So only origins that were
+// asked for are reflected, and the dashboard's own fetches never need CORS.
+const CORS_ALLOWED_ORIGINS = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+
 app.use(cors({
   origin: (origin, callback) => {
-    callback(null, origin || true);
+    // No Origin header means a non-browser client (curl, SDK, CLI tool); CORS
+    // does not apply to those and blocking them would break the router.
+    if (!origin) return callback(null, true);
+    if (CORS_ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
