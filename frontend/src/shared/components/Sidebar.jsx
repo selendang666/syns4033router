@@ -17,15 +17,31 @@ const VISIBLE_MEDIA_KINDS = ["embedding", "image", "tts", "stt", "video"];
 const COMBINED_WEB_ITEM = { id: "web", label: "Web Fetch & Search", icon: "travel_explore", href: "/dashboard/media-providers/web" };
 
 const navItems = [
-  { href: "/dashboard/endpoint", label: "Endpoint", icon: "api" },
+  { href: "/dashboard/endpoint", label: "Endpoint & Key", icon: "api" },
   { href: "/dashboard/providers", label: "Providers", icon: "dns" },
-  // { href: "/dashboard/basic-chat", label: "Basic Chat", icon: "chat" }, // Hidden
-  { href: "/dashboard/combos", label: "Combos", icon: "layers" },
+  { href: "/dashboard/combos", label: "Combo & Vision Adapter", icon: "layers" },
   { href: "/dashboard/usage", label: "Usage", icon: "bar_chart" },
+  { href: "/dashboard/pemakaian", label: "Pemakaian", icon: "monitoring" },
+  { href: "/dashboard/live-traffic", label: "Live Traffic", icon: "podcasts" },
+  { href: "/dashboard/api-health", label: "API Health Scanner", icon: "verified_user" },
+  { href: "/dashboard/cloudflare-deploy", label: "Cloudflare Deploy", icon: "cloud" },
+  { href: "/dashboard/anti-roseller", label: "Anti-Roseller Notice", icon: "warning" },
+  { href: "/dashboard/paket-harga", label: "Paket & Harga", icon: "credit_card" },
+  { href: "/dashboard/member", label: "Member", icon: "group" },
   { href: "/dashboard/quota", label: "Quota Tracker", icon: "data_usage" },
+  { href: "/dashboard/token-saver", label: "Token Saver", icon: "sell" },
+];
+
+// Not in the reference menu, kept because each one is a working page. Dropping
+// them would remove access to live functionality rather than tidy the nav.
+const toolItems = [
   { href: "/dashboard/mitm", label: "MITM", icon: "security" },
   { href: "/dashboard/cli-tools", label: "CLI Tools", icon: "terminal" },
+  { href: "/dashboard/automation", label: "Automation", icon: "smart_toy" },
+  { href: "/dashboard/skills", label: "Skills", icon: "extension" },
   { href: "/dashboard/docs", label: "Docs", icon: "menu_book" },
+  { href: "/dashboard/console-log", label: "Console Log", icon: "receipt_long" },
+  { href: "/dashboard/translator", label: "Translator", icon: "translate" },
 ];
 
 const debugItems = [
@@ -35,8 +51,7 @@ const debugItems = [
 
 const systemItems = [
   { href: "/dashboard/proxy-pools", label: "Proxy Pools", icon: "lan" },
-  { href: "/dashboard/automation", label: "Automation", icon: "smart_toy" },
-  { href: "/dashboard/skills", label: "Skills", icon: "extension" },
+  { href: "/dashboard/model-rebranding", label: "Model Rebranding", icon: "swap_horiz" },
   { href: "/dashboard/system-prompt", label: "System Prompt", icon: "article" },
 ];
 
@@ -264,7 +279,7 @@ export default function Sidebar({ onClose }) {
             ))}
 
             {/* Debug items (inside System section, before Settings) */}
-            {debugItems.map((item) => {
+            {toolItems.map((item) => {
               const show = item.href !== "/dashboard/translator" || enableTranslator;
               return show ? (
                 <Link
