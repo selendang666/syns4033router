@@ -1,12 +1,42 @@
 import { ERROR_TYPES, DEFAULT_ERROR_MESSAGES } from "../config/errorConfig.js";
 
 /**
+ * Messages produced by the runtime rather than by us: Node/V8 wording, stack
+ * frames, filesystem errno strings. They name internal functions and paths, so
+ * they do not go to the client. Business messages ("Missing API key", "Unknown
+ * provider: …") are written by us and pass through untouched — the caller needs
+ * them to fix their request.
+ */
+const INTERNAL_ERROR_PATTERNS = [
+  /Maximum call stack/i,
+  /\b(?:TypeError|RangeError|ReferenceError|SyntaxError)\b/,
+  /\bis not a function\b/i,
+  /Cannot read (?:propert|properties)/i,
+  /Cannot destructure/i,
+  /\bundefined is not\b/i,
+  /\bnull is not\b/i,
+  /\b(?:ENOENT|EACCES|EPIPE|ECONNRESET|EAI_AGAIN)\b/,
+  /\bat\s+\S+\s+\(.*:\d+:\d+\)/, // stack frame: at fn (file:line:col)
+  /\.js:\d+:\d+|\.ts:\d+:\d+/,
+];
+
+export function isInternalError(message) {
+  if (typeof message !== "string") return false;
+  return INTERNAL_ERROR_PATTERNS.some((re) => re.test(message));
+}
+
+/**
  * Build OpenAI-compatible error response body
  * @param {number} statusCode - HTTP status code
  * @param {string} message - Error message
  * @returns {object} Error response object
  */
 export function buildErrorBody(statusCode, message) {
+  // Runtime wording is replaced with a generic 500; our own messages stay, since
+  // the caller cannot fix the request without them.
+  if (isInternalError(message) && statusCode >= 500) {
+    message = DEFAULT_ERROR_MESSAGES[500] || "An error occurred";
+  }
   const errorInfo = ERROR_TYPES[statusCode] || 
     (statusCode >= 500 
       ? { type: "server_error", code: "internal_server_error" }
