@@ -1,4 +1,5 @@
 import { PROVIDER_MODELS, PROVIDER_ID_TO_ALIAS } from "../../../shared/constants/models.js";
+import { publicMessage } from "../../../lib/publicMessage.js";
 import {
   AI_PROVIDERS,
   getProviderAlias,
@@ -459,7 +460,7 @@ export async function GET(req, res) {
   } catch (error) {
     console.log("Error fetching models:", error);
     return Response.json(
-      { error: { message: error.message, type: "server_error" } },
+      { error: { message: publicMessage(error.message), type: "server_error" } },
       { status: 500 }
     );
   }

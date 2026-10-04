@@ -1,4 +1,5 @@
 import { buildModelsList } from "../route.js";
+import { publicMessage } from "../../../../lib/publicMessage.js";
 
 // URL slug → service kind(s). `web` covers both webSearch and webFetch.
 const KIND_SLUG_MAP = {
@@ -49,7 +50,7 @@ export async function GET(_request, { params }) {
   } catch (error) {
     console.log("Error fetching models by kind:", error);
     return Response.json(
-      { error: { message: error.message, type: "server_error" } },
+      { error: { message: publicMessage(error.message), type: "server_error" } },
       { status: 500 }
     );
   }

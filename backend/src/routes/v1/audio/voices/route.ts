@@ -1,4 +1,5 @@
 import { AI_PROVIDERS } from "../../../../shared/constants/providers.js";
+import { publicMessage } from "../../../../lib/publicMessage.js";
 
 // Provider → internal voices API. Edge/local-device share the generic endpoint.
 const PROVIDER_API = {
@@ -78,7 +79,7 @@ export async function GET_handler(req, res) {
     });
   } catch (err) {
     return Response.json(
-      { error: { message: err.message || "Failed", type: "server_error" } },
+      { error: { message: publicMessage(err.message, "Failed to list voices"), type: "server_error" } },
       { status: 502, headers: { "Access-Control-Allow-Origin": "*" } },
     );
   }

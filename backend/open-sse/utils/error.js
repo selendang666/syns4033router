@@ -1,29 +1,7 @@
 import { ERROR_TYPES, DEFAULT_ERROR_MESSAGES } from "../config/errorConfig.js";
+import { isInternalError, publicMessage } from "../../src/lib/publicMessage.js";
 
-/**
- * Messages produced by the runtime rather than by us: Node/V8 wording, stack
- * frames, filesystem errno strings. They name internal functions and paths, so
- * they do not go to the client. Business messages ("Missing API key", "Unknown
- * provider: …") are written by us and pass through untouched — the caller needs
- * them to fix their request.
- */
-const INTERNAL_ERROR_PATTERNS = [
-  /Maximum call stack/i,
-  /\b(?:TypeError|RangeError|ReferenceError|SyntaxError)\b/,
-  /\bis not a function\b/i,
-  /Cannot read (?:propert|properties)/i,
-  /Cannot destructure/i,
-  /\bundefined is not\b/i,
-  /\bnull is not\b/i,
-  /\b(?:ENOENT|EACCES|EPIPE|ECONNRESET|EAI_AGAIN)\b/,
-  /\bat\s+\S+\s+\(.*:\d+:\d+\)/, // stack frame: at fn (file:line:col)
-  /\.js:\d+:\d+|\.ts:\d+:\d+/,
-];
-
-export function isInternalError(message) {
-  if (typeof message !== "string") return false;
-  return INTERNAL_ERROR_PATTERNS.some((re) => re.test(message));
-}
+export { isInternalError, publicMessage };
 
 /**
  * Build OpenAI-compatible error response body
@@ -56,6 +34,11 @@ export function buildErrorBody(statusCode, message) {
  * @param {number} statusCode - HTTP status code
  * @param {string} message - Error message
  * @returns {Response} HTTP Response object
+ */
+/**
+ * Replace runtime wording with a caller-safe fallback. Use this in route
+ * handlers that build their own Response rather than going through
+ * buildErrorBody, so no handler has to re-implement the pattern list.
  */
 export function errorResponse(statusCode, message) {
   return new Response(JSON.stringify(buildErrorBody(statusCode, message)), {
