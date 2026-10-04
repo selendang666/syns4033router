@@ -39,8 +39,11 @@ const AmmailTutorial     = lazy(() => import("./pages/automation/ammail-tutorial
 // paths, so letting the page mount only produces a half-rendered screen and a
 // console full of failed fetches; the route has to refuse in the same place the
 // backend does.
+//
+// Usage is deliberately absent: /api/usage/* is not admin-gated, and reading
+// aggregate traffic is the point of the tier.
 const ADMIN_PAGES = new Set([
-  "endpoint", "providers", "providers/new", "combos", "usage", "live-traffic",
+  "endpoint", "providers", "providers/new", "combos",
   "api-health", "cloudflare-deploy", "anti-roseller", "paket-harga", "member",
   "proxy-pools", "model-rebranding", "system-prompt", "mitm", "cli-tools",
   "automation", "skills", "docs", "console-log", "profile",
