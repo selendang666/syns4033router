@@ -30,6 +30,8 @@ interface SignInPageProps {
   testimonials?: Testimonial[];
   donateUrl?: string;
   donateQrSrc?: string;
+  username?: string;
+  setUsername?: (val: string) => void;
   password?: string;
   setPassword?: (val: string) => void;
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -99,6 +101,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   testimonials = [],
   donateUrl,
   donateQrSrc,
+  username = "",
+  setUsername,
   password = "",
   setPassword,
   onSignIn,
@@ -145,6 +149,21 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
             {passwordAvailable && (
               <form className="space-y-5" onSubmit={onSignIn}>
+                <div className="animate-element animate-delay-350">
+                  <label className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Username <span className="text-xs text-zinc-400">(opsional)</span></label>
+                  <GlassInputWrapper>
+                    <input
+                      name="username"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="Kosongkan jika Anda pemilik router"
+                      value={username}
+                      onChange={(e) => setUsername?.(e.target.value)}
+                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none text-zinc-900 dark:text-zinc-100"
+                    />
+                  </GlassInputWrapper>
+                </div>
+
                 <div className="animate-element animate-delay-400">
                   <label className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Password</label>
                   <GlassInputWrapper>
@@ -156,7 +175,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                         value={password}
                         onChange={(e) => setPassword?.(e.target.value)}
                         required
-                        autoFocus={!oidcAvailable}
+                        autoFocus={!oidcAvailable && !username}
                         className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none text-zinc-900 dark:text-zinc-100"
                       />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-3 flex items-center">

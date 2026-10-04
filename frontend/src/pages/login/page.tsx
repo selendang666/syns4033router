@@ -4,6 +4,7 @@ import { SignInPage } from "@/components/ui/sign-in";
 import { GITHUB_CONFIG } from "@/shared/constants/config";
 
 export default function LoginPage() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [resetHint, setResetHint] = useState("");
@@ -76,7 +77,9 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        // Portal accounts sign in with username + password; the owner's own
+        // session sends password only, so this stays backwards compatible.
+        body: JSON.stringify(username.trim() ? { username: username.trim(), password } : { password }),
       });
 
       if (res.ok) {
@@ -120,6 +123,8 @@ export default function LoginPage() {
 
   return (
     <SignInPage
+      username={username}
+      setUsername={setUsername}
       title={
         <span className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           SYNS4033Router <span className="font-light text-zinc-400">V3</span>
