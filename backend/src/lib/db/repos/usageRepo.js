@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { createHash } from "node:crypto";
 import { getAdapter } from "../driver.js";
 import { parseJson, stringifyJson } from "../helpers/jsonCol.js";
 import { getMeta, setMeta } from "../helpers/metaStore.js";
@@ -24,6 +25,12 @@ const lastErrorProvider = global._lastErrorProvider;
 const pendingTimers = global._pendingTimers;
 const recentRing = global._recentRing;
 const connCache = global._connectionMapCache;
+
+// Stable, non-reversible label for a credential. sha256 keeps entries for the
+// same key grouped across days without putting the key itself in the payload.
+function hashKey(key) {
+  return createHash("sha256").update(key).digest("hex").slice(0, 12);
+}
 
 export const statsEmitter = global._statsEmitter;
 
@@ -474,15 +481,19 @@ export async function getUsageStats(period = "all") {
         const apiKeyVal = ak.apiKey;
         const keyInfo = apiKeyVal ? apiKeyMap[apiKeyVal] : null;
         const keyName = keyInfo?.name || (apiKeyVal ? apiKeyVal.slice(0, 8) + "..." : "Local (No API Key)");
-        const apiKeyKey = apiKeyVal || "local-no-key";
-        if (!stats.byApiKey[akKey]) {
-          stats.byApiKey[akKey] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, rawModel, provider: providerDisplayName, apiKey: apiKeyVal, keyName, apiKeyKey, lastUsed: dateKey };
+        // akKey embeds the raw API key ("<key>|<model>|<provider>"). It was
+        // used verbatim as the map key, so /api/usage/stats handed every
+        // credential in the install to whoever could read it. Group under a
+        // stable hash and keep the secret out of the response.
+        const apiKeyKey = apiKeyVal ? `key:${hashKey(apiKeyVal)}` : "local-no-key";
+        if (!stats.byApiKey[apiKeyKey]) {
+          stats.byApiKey[apiKeyKey] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, rawModel, provider: providerDisplayName, apiKey: apiKeyVal, keyName, apiKeyKey, lastUsed: dateKey };
         }
-        stats.byApiKey[akKey].requests += ak.requests || 0;
-        stats.byApiKey[akKey].promptTokens += ak.promptTokens || 0;
-        stats.byApiKey[akKey].completionTokens += ak.completionTokens || 0;
-        stats.byApiKey[akKey].cost += ak.cost || 0;
-        if (dateKey > (stats.byApiKey[akKey].lastUsed || "")) stats.byApiKey[akKey].lastUsed = dateKey;
+        stats.byApiKey[apiKeyKey].requests += ak.requests || 0;
+        stats.byApiKey[apiKeyKey].promptTokens += ak.promptTokens || 0;
+        stats.byApiKey[apiKeyKey].completionTokens += ak.completionTokens || 0;
+        stats.byApiKey[apiKeyKey].cost += ak.cost || 0;
+        if (dateKey > (stats.byApiKey[apiKeyKey].lastUsed || "")) stats.byApiKey[apiKeyKey].lastUsed = dateKey;
       }
 
       for (const [epKey, ep] of Object.entries(day.byEndpoint || {})) {
@@ -586,10 +597,10 @@ export async function getUsageStats(period = "all") {
         const keyInfo = apiKeyMap[r.apiKey];
         const keyName = keyInfo?.name || r.apiKey.slice(0, 8) + "...";
         const akKey = `${r.apiKey}|${r.model}|${r.provider || "unknown"}`;
-        if (!stats.byApiKey[akKey]) {
-          stats.byApiKey[akKey] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, rawModel: r.model, provider: providerDisplayName, apiKey: r.apiKey, keyName, apiKeyKey: r.apiKey, lastUsed: r.timestamp };
+        if (!stats.byApiKey[apiKeyKey]) {
+          stats.byApiKey[apiKeyKey] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, rawModel: r.model, provider: providerDisplayName, apiKey: r.apiKey, keyName, apiKeyKey: r.apiKey, lastUsed: r.timestamp };
         }
-        const ake = stats.byApiKey[akKey];
+        const ake = stats.byApiKey[apiKeyKey];
         ake.requests++; ake.promptTokens += promptTokens; ake.completionTokens += completionTokens; ake.cost += entryCost;
         if (new Date(r.timestamp) > new Date(ake.lastUsed)) ake.lastUsed = r.timestamp;
       } else {

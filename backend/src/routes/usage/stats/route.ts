@@ -1,5 +1,6 @@
 
 import { getUsageStats } from "../../../lib/usageDb.js";
+import { redactUsageCredentials } from "../../../lib/usage/redact.js";
 
 const VALID_PERIODS = new Set(["today", "24h", "7d", "30d", "60d", "all"]);
 
@@ -15,7 +16,7 @@ export async function GET_handler(req, res) {
     }
 
     const stats = await getUsageStats(period);
-    return res.json(stats);
+    return res.json(redactUsageCredentials(stats));
   } catch (error) {
     console.error("[API] Failed to get usage stats:", error);
     return res.status(500).json({ error: "Failed to fetch usage stats" });

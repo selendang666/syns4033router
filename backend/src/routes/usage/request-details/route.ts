@@ -1,5 +1,6 @@
 
 import { getRequestDetails } from "../../../lib/usageDb.js";
+import { redactUsageCredentials } from "../../../lib/usage/redact.js";
 
 /**
  * GET /api/usage/request-details
@@ -42,7 +43,7 @@ export async function GET_handler(req, res) {
     
     const result = await getRequestDetails(filter);
     
-    return res.json(result);
+    return res.json(redactUsageCredentials(result));
   } catch (error) {
     console.error("[API] Failed to get request details:", error);
     return res.status(500).json(
