@@ -1,5 +1,7 @@
 "use server";
 
+import { findSsrfReason } from "../../../lib/net/ssrfGuard.js";
+
 
 
 const TIMEOUT_MS = 8000;
@@ -86,6 +88,10 @@ export async function POST_handler(req, res) {
     const { url } = req.body || {};
     if (!url || typeof url !== "string") {
       return res.status(400).json({ error: "url required" });
+    }
+    const ssrfReason = await findSsrfReason(url);
+    if (ssrfReason) {
+      return res.status(400).json({ error: `URL rejected: ${ssrfReason}` });
     }
     const result = await probeMcp(url);
     return res.json(result);
