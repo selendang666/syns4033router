@@ -596,9 +596,12 @@ export async function getUsageStats(period = "all") {
       if (r.apiKey && typeof r.apiKey === "string") {
         const keyInfo = apiKeyMap[r.apiKey];
         const keyName = keyInfo?.name || r.apiKey.slice(0, 8) + "...";
-        const akKey = `${r.apiKey}|${r.model}|${r.provider || "unknown"}`;
+        // Group by a hash, not by the key. The earlier akKey
+        // ("<apiKey>|<model>|<provider>") put every credential in the response
+        // as a map key.
+        const apiKeyKey = r.apiKey ? `key:${hashKey(r.apiKey)}` : "local-no-key";
         if (!stats.byApiKey[apiKeyKey]) {
-          stats.byApiKey[apiKeyKey] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, rawModel: r.model, provider: providerDisplayName, apiKey: r.apiKey, keyName, apiKeyKey: r.apiKey, lastUsed: r.timestamp };
+          stats.byApiKey[apiKeyKey] = { requests: 0, promptTokens: 0, completionTokens: 0, cost: 0, rawModel: r.model, provider: providerDisplayName, apiKey: null, keyName, lastUsed: r.timestamp };
         }
         const ake = stats.byApiKey[apiKeyKey];
         ake.requests++; ake.promptTokens += promptTokens; ake.completionTokens += completionTokens; ake.cost += entryCost;
