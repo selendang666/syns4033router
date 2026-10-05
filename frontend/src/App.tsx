@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import ComingSoon from "./pages/coming-soon/page.jsx";
 import Member from "./pages/member/page.jsx";
+import MyKey from "./pages/my-key/page.jsx";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { DashboardLayout } from "@/shared/components/layouts";
 
@@ -153,6 +154,7 @@ export default function App() {
           <Route path="anti-roseller" element={<ComingSoon />} />
           <Route path="paket-harga" element={<ComingSoon />} />
           <Route path="member" element={<Member />} />
+          <Route path="my-key" element={<MyKey />} />
           <Route path="token-saver" element={<ComingSoon />} />
           <Route path="model-rebranding" element={<ComingSoon />} />
       <Route path="*" element={<Navigate to="/" replace />} />

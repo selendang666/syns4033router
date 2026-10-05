@@ -19,11 +19,13 @@ const COMBINED_WEB_ITEM = { id: "web", label: "Web Fetch & Search", icon: "trave
 // Portal users see a reduced navigation. Hiding a link is convenience, not
 // security — the routes answer 404 for them regardless — but a menu full of
 // buttons that 404 is worse than a menu that matches what the account can do.
+// Live Traffic and Token Saver are placeholders today. A menu entry that lands
+// on "not built yet" is worse than no entry, so the list holds only what opens.
 const USER_VISIBLE = new Set([
+  "/dashboard/my-key",
   "/dashboard/pemakaian",
-  "/dashboard/live-traffic",
+  "/dashboard/usage",
   "/dashboard/quota",
-  "/dashboard/token-saver",
 ]);
 
 function useRole() {
@@ -46,6 +48,7 @@ const navItems = [
   { href: "/dashboard/providers", label: "Providers", icon: "dns" },
   { href: "/dashboard/combos", label: "Combo & Vision Adapter", icon: "layers" },
   { href: "/dashboard/usage", label: "Usage", icon: "bar_chart" },
+  { href: "/dashboard/my-key", label: "Key Saya", icon: "key" },
   { href: "/dashboard/pemakaian", label: "Pemakaian", icon: "monitoring" },
   { href: "/dashboard/live-traffic", label: "Live Traffic", icon: "podcasts" },
   { href: "/dashboard/api-health", label: "API Health Scanner", icon: "verified_user" },
