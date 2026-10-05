@@ -144,6 +144,8 @@ export default function App() {
             <Route path="media-providers/:kind" element={<MediaProviderKind />} />
             <Route path="media-providers/:kind/:id" element={<MediaProviderKindId />} />
             <Route path="media-providers/combo/:id" element={<MediaProviderComboDetail />} />
+          <Route path="my-key" element={<MyKey />} />
+          <Route path="member" element={<Member />} />
           </Route>
 
           {/* Fallback */}
@@ -153,8 +155,6 @@ export default function App() {
           <Route path="cloudflare-deploy" element={<ComingSoon />} />
           <Route path="anti-roseller" element={<ComingSoon />} />
           <Route path="paket-harga" element={<ComingSoon />} />
-          <Route path="member" element={<Member />} />
-          <Route path="my-key" element={<MyKey />} />
           <Route path="token-saver" element={<ComingSoon />} />
           <Route path="model-rebranding" element={<ComingSoon />} />
       <Route path="*" element={<Navigate to="/" replace />} />
