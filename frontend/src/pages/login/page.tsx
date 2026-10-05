@@ -83,8 +83,11 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
         localStorage.setItem("9r_authed", "1");
-        navigate("/dashboard");
+        // The index route is the API-key page, which a portal account cannot
+        // open. Send them to the one dashboard they do have.
+        navigate(data.role === "user" ? "/dashboard/usage" : "/dashboard");
         navigate(0);
       } else {
         const data = await res.json();

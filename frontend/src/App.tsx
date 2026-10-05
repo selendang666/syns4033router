@@ -42,7 +42,11 @@ const AmmailTutorial     = lazy(() => import("./pages/automation/ammail-tutorial
 //
 // Usage is deliberately absent: /api/usage/* is not admin-gated, and reading
 // aggregate traffic is the point of the tier.
+// The index route is not a summary page: pages/page.jsx renders
+// EndpointPageClient, which fetches /api/keys and /api/settings. An empty
+// path after the prefix is therefore an admin page too.
 const ADMIN_PAGES = new Set([
+  "",
   "endpoint", "providers", "providers/new", "combos",
   "api-health", "cloudflare-deploy", "anti-roseller", "paket-harga", "member",
   "proxy-pools", "model-rebranding", "system-prompt", "mitm", "cli-tools",
